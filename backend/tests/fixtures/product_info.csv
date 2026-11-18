@@ -1,0 +1,4 @@
+product_id,product_name,brand_id,brand_name,loves_count,rating,reviews,price_usd,primary_category,secondary_category,tertiary_category
+PTEST1,Synthetic Gel Cleanser,1,Test Brand A,100,4.5,10,20.0,Skincare,Cleansers,Face Wash
+PTEST2,Synthetic Night Cream,2,Test Brand B,200,4.0,25,45.0,Skincare,Moisturizers,Night Creams
+PTEST3,Synthetic Lipstick,2,Test Brand B,50,3.5,7,18.0,Makeup,Lip,Lipstick

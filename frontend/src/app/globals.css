@@ -1,0 +1,27 @@
+@import "tailwindcss";
+
+/* Sephora Business Insight — brand palette */
+:root {
+  --white: #ffffff;
+  --soft-pink: #fceef2;
+  --elegant-pink: #e8a0b4;
+  --burgundy: #800f35;
+  --light-gray: #f7f7f8;
+  --charcoal: #29252a;
+}
+
+@theme inline {
+  --color-white: var(--white);
+  --color-soft-pink: var(--soft-pink);
+  --color-elegant-pink: var(--elegant-pink);
+  --color-burgundy: var(--burgundy);
+  --color-light-gray: var(--light-gray);
+  --color-charcoal: var(--charcoal);
+  --font-sans: var(--font-geist-sans);
+  --font-display: var(--font-display-serif);
+}
+
+body {
+  background: var(--light-gray);
+  color: var(--charcoal);
+}
