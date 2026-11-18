@@ -1,13 +1,32 @@
 @import "tailwindcss";
 
-/* Sephora Business Insight — brand palette */
+/*
+ * Sephora Business Insight — design tokens.
+ * Brand palette (fixed): white, soft pink, elegant pink, burgundy, light gray, charcoal.
+ * Text tokens were contrast-checked on white (WCAG AA): ink 15.1:1, ink-2 6.8:1, ink-3 5.4:1.
+ * Elegant pink is 2.1:1 on white, so it is NEVER used for text — accents and marks only.
+ */
 :root {
   --white: #ffffff;
   --soft-pink: #fceef2;
   --elegant-pink: #e8a0b4;
   --burgundy: #800f35;
+  --burgundy-deep: #5f0b27;
   --light-gray: #f7f7f8;
   --charcoal: #29252a;
+
+  --ink-2: #5f5961;
+  --ink-3: #6e6870;
+  --line: #ebe8ec;
+  --line-strong: #dcd8de;
+  --grid: #efedf0;
+
+  /* Sequential ramp (heatmap), validated: monotone lightness, light end >= 2:1. */
+  --seq-1: #e8a0b4;
+  --seq-2: #c9708e;
+  --seq-3: #a8355e;
+  --seq-4: #800f35;
+  --seq-5: #4f0820;
 }
 
 @theme inline {
@@ -15,13 +34,48 @@
   --color-soft-pink: var(--soft-pink);
   --color-elegant-pink: var(--elegant-pink);
   --color-burgundy: var(--burgundy);
+  --color-burgundy-deep: var(--burgundy-deep);
   --color-light-gray: var(--light-gray);
   --color-charcoal: var(--charcoal);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
   --font-sans: var(--font-geist-sans);
   --font-display: var(--font-display-serif);
 }
 
+html {
+  background: var(--white);
+}
+
 body {
-  background: var(--light-gray);
+  background: var(--white);
   color: var(--charcoal);
+}
+
+::selection {
+  background: var(--soft-pink);
+  color: var(--burgundy-deep);
+}
+
+/* Visible, on-brand keyboard focus everywhere. */
+:focus-visible {
+  outline: 2px solid var(--burgundy);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Recharts: no default outline box on click. */
+.recharts-wrapper *:focus:not(:focus-visible) {
+  outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
 }

@@ -1,5 +1,21 @@
 import { config } from "@/lib/config";
-import type { HealthResponse, OverviewResponse } from "./types";
+import type {
+  ActivityHeatmap,
+  CatalogueCategories,
+  ExecutiveKpis,
+  FilterOptions,
+  HealthResponse,
+  OverviewResponse,
+  PriceDistribution,
+  RankedProduct,
+  RatingDistribution,
+  RatingPopularity,
+  ReviewCategories,
+  ReviewFilterParams,
+  ReviewTrend,
+  TopBrands,
+  YearRanking,
+} from "./types";
 
 export class ApiError extends Error {
   constructor(
@@ -11,14 +27,32 @@ export class ApiError extends Error {
   }
 }
 
-export async function apiGet<T>(path: string, init?: RequestInit): Promise<T> {
-  const url = `${config.apiBaseUrl}${config.apiPrefix}${path}`;
+export type QueryValue = string | number | boolean | undefined | null | readonly (string | number)[];
+export type Query = Record<string, QueryValue>;
+
+/** Build a query string; arrays repeat the key (?brand=A&brand=B), empty values are dropped. */
+export function toQueryString(query: Query = {}): string {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(query)) {
+    if (value === undefined || value === null || value === "") continue;
+    if (Array.isArray(value)) {
+      for (const v of value) params.append(key, String(v));
+    } else {
+      params.append(key, String(value));
+    }
+  }
+  const qs = params.toString();
+  return qs ? `?${qs}` : "";
+}
+
+export async function apiGet<T>(path: string, query?: Query, init?: RequestInit): Promise<T> {
+  const url = `${config.apiBaseUrl}${config.apiPrefix}${path}${toQueryString(query)}`;
   const res = await fetch(url, { cache: "no-store", ...init });
   if (!res.ok) {
     let detail = res.statusText;
     try {
-      const body = (await res.json()) as { detail?: string };
-      if (body.detail) detail = body.detail;
+      const body = (await res.json()) as { detail?: unknown };
+      if (typeof body.detail === "string") detail = body.detail;
     } catch {
       /* non-JSON error body */
     }
@@ -27,7 +61,34 @@ export async function apiGet<T>(path: string, init?: RequestInit): Promise<T> {
   return (await res.json()) as T;
 }
 
+type F = ReviewFilterParams;
+
 export const api = {
   health: () => apiGet<HealthResponse>("/health"),
   overview: () => apiGet<OverviewResponse>("/overview"),
+  filters: () => apiGet<FilterOptions>("/filters"),
+  kpis: (f: F = {}) => apiGet<ExecutiveKpis>("/kpis", { ...f }),
+  ratingDistribution: (f: F = {}) =>
+    apiGet<RatingDistribution>("/reviews/rating-distribution", { ...f }),
+  trend: (f: F = {}, granularity: "month" | "quarter" | "year" = "month") =>
+    apiGet<ReviewTrend>("/reviews/trends", { ...f, granularity }),
+  heatmap: (f: F = {}) => apiGet<ActivityHeatmap>("/reviews/activity-heatmap", { ...f }),
+  topProducts: (f: F = {}, limit = 10) =>
+    apiGet<RankedProduct[]>("/products/top-reviewed", { ...f, limit }),
+  topProductsByYear: (year: number, f: F = {}, limit = 10) =>
+    apiGet<YearRanking>("/products/top-by-year", { ...f, year, limit }),
+  ratingPopularity: (f: F = {}, minReviews = 25, limit = 3000) =>
+    apiGet<RatingPopularity>("/products/rating-popularity", {
+      ...f,
+      min_reviews: minReviews,
+      limit,
+    }),
+  topBrands: (f: F = {}, limit = 10) => apiGet<TopBrands>("/brands/top", { ...f, limit }),
+  catalogueCategories: () => apiGet<CatalogueCategories>("/categories/catalogue"),
+  reviewCategories: (f: F = {}) => apiGet<ReviewCategories>("/categories/reviews", { ...f }),
+  priceDistribution: (binWidth = 10, maxPrice = 300) =>
+    apiGet<PriceDistribution>("/prices/distribution", {
+      bin_width: binWidth,
+      max_price: maxPrice,
+    }),
 };

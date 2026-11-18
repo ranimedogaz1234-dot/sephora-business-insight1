@@ -1,126 +1,275 @@
 import { connection } from "next/server";
-import { Card } from "@/components/ui/Card";
-import { KpiCard } from "@/components/ui/KpiCard";
-import { StatusBadge } from "@/components/ui/StatusBadge";
 import { api } from "@/lib/api/client";
-import type { HealthResponse, OverviewResponse } from "@/lib/api/types";
+import type { FilterOptions } from "@/lib/api/types";
 import { config } from "@/lib/config";
 import {
-  formatCompact,
-  formatInteger,
-  formatMonthYear,
-  formatPercent,
-  formatRating,
-} from "@/lib/format";
+  hasReviewFilters,
+  parseFilters,
+  periodLabel,
+  toApiParams,
+  type FilterDomain,
+  type RawSearchParams,
+} from "@/lib/filters";
+import { formatDate, formatInteger, formatPercent, formatRating, plural } from "@/lib/format";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { PendingFrame } from "@/components/layout/NavigationTransition";
+import { FilterBar } from "@/components/filters/FilterBar";
+import { YearSelect } from "@/components/filters/YearSelect";
+import { KpiSection } from "@/components/dashboard/KpiSection";
+import { ChartCard } from "@/components/ui/ChartCard";
+import { EmptyState, SectionError } from "@/components/ui/States";
+import { RankedBarList } from "@/components/charts/RankedBarList";
+import { ReviewActivityCard } from "@/components/charts/ReviewActivityCard";
+import { RatingDistributionCard } from "@/components/charts/RatingDistributionCard";
+import { ActivityHeatmapCard } from "@/components/charts/ActivityHeatmapCard";
+import { PriceDistributionCard } from "@/components/charts/PriceDistributionCard";
+import { RatingPopularityCard } from "@/components/charts/RatingPopularityCard";
 
-async function load(): Promise<{
-  health: HealthResponse | null;
-  overview: OverviewResponse | null;
-  error: string | null;
-}> {
-  let health: HealthResponse;
-  try {
-    health = await api.health();
-  } catch (e) {
-    return {
-      health: null,
-      overview: null,
-      error: `Cannot reach the API at ${config.apiBaseUrl} (${(e as Error).message}).`,
-    };
-  }
-  if (!health.dataset_available) {
-    return {
-      health,
-      overview: null,
-      error: "The API is running but cannot find the CSV files. Check SBI_DATA_DIR in backend/.env.",
-    };
-  }
-  try {
-    return { health, overview: await api.overview(), error: null };
-  } catch (e) {
-    return { health, overview: null, error: `Overview request failed: ${(e as Error).message}` };
-  }
+const MIN_REVIEWS_SCATTER = 25;
+
+type Settled<T> = { ok: true; value: T } | { ok: false; error: string };
+const settle = <T,>(p: Promise<T>): Promise<Settled<T>> =>
+  p.then(
+    (value) => ({ ok: true as const, value }),
+    (e: unknown) => ({ ok: false as const, error: e instanceof Error ? e.message : String(e) }),
+  );
+
+function domainFrom(options: FilterOptions): FilterDomain {
+  return {
+    years: options.reviews.years.map((y) => y.year),
+    dateMax: options.reviews.date_max ?? "",
+    brands: options.reviews.brands.map((b) => b.name),
+    subcategories: options.reviews.subcategories.map((s) => s.name),
+  };
 }
 
-function datasetLabel(health: HealthResponse | null): string {
-  if (!health) return "Dataset status unknown";
-  return health.dataset_available ? "Dataset found" : "Dataset missing";
+function Unavailable({ message }: { message: string }) {
+  return (
+    <>
+      <PageHeader
+        eyebrow="Executive overview"
+        title="Sephora Business Insight"
+        description="Headline performance of the Sephora catalogue and its Skincare reviews."
+      />
+      <main className="mx-auto max-w-[1440px] px-4 py-8 sm:px-6 lg:px-10">
+        <div role="alert" className="max-w-xl rounded-xl border border-line p-6">
+          <p className="text-sm font-semibold text-charcoal">The analytics API is not available</p>
+          <p className="mt-1 text-sm text-ink-2">{message}</p>
+          <p className="mt-3 text-xs text-ink-3">
+            Start the backend (see README) and make sure SBI_DATA_DIR points to the CSV files. No figures are shown
+            until real data is available.
+          </p>
+        </div>
+      </main>
+    </>
+  );
 }
 
-export default async function OverviewPage() {
-  await connection(); // always render with live backend data
-  const { health, overview, error } = await load();
+export default async function ExecutiveOverview({ searchParams }: { searchParams: Promise<RawSearchParams> }) {
+  await connection(); // always render live data
+
+  let options: FilterOptions;
+  try {
+    options = await api.filters();
+  } catch (e) {
+    return <Unavailable message={`Cannot reach the API at ${config.apiBaseUrl} (${(e as Error).message}).`} />;
+  }
+
+  const domain = domainFrom(options);
+  const filters = parseFilters(await searchParams, domain);
+  const f = toApiParams(filters, domain);
+
+  const [kpis, ratings, trend, heatmap, topProducts, byYear, brands, reviewCats, catalogueCats, prices, popularity] =
+    await Promise.all([
+      settle(api.kpis(f)),
+      settle(api.ratingDistribution(f)),
+      settle(api.trend(f, "month")),
+      settle(api.heatmap(f)),
+      settle(api.topProducts(f, 10)),
+      settle(api.topProductsByYear(filters.rankYear, f, 10)),
+      settle(api.topBrands(f, 10)),
+      settle(api.reviewCategories(f)),
+      settle(api.catalogueCategories()),
+      settle(api.priceDistribution(10, 300)),
+      settle(api.ratingPopularity(f, MIN_REVIEWS_SCATTER, 3000)), // API maximum: plot every qualifying product
+    ]);
+
+  const filtered = hasReviewFilters(filters);
 
   return (
-    <div className="mx-auto max-w-6xl space-y-8">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="text-xs uppercase tracking-[0.2em] text-elegant-pink">Project setup</p>
-          <h1 className="font-display text-3xl text-charcoal md:text-4xl">Dataset Overview</h1>
-        </div>
-        <div className="flex gap-2">
-          <StatusBadge ok={!!health} label={health ? "API connected" : "API offline"} />
-          <StatusBadge ok={!!health?.dataset_available} label={datasetLabel(health)} />
-        </div>
-      </header>
+    <>
+      <PageHeader
+        eyebrow="Executive overview"
+        title="Business performance at a glance"
+        description="Catalogue composition across all nine categories, and what 1.09M Skincare reviews say about ratings, products and brands."
+        meta={
+          <span>
+            Reviews {formatDate(options.reviews.date_min)} – {formatDate(options.reviews.date_max)}
+            <br className="hidden sm:block" />
+            <span className="sm:hidden"> · </span>
+            {filtered ? `Showing: ${periodLabel(filters, domain)}` : "Showing all review records"}
+          </span>
+        }
+        filters={
+          <FilterBar
+            filters={filters}
+            domain={domain}
+            brands={options.reviews.brands}
+            subcategories={options.reviews.subcategories}
+          />
+        }
+      />
 
-      {error && (
-        <Card>
-          <p className="text-sm text-burgundy">{error}</p>
-          <p className="mt-1 text-xs text-charcoal/60">
-            Start the backend (see README) and check the environment configuration.
-          </p>
-        </Card>
-      )}
+      <main className="mx-auto max-w-[1440px] px-4 py-6 sm:px-6 lg:px-10 lg:py-8">
+        <PendingFrame>
+          <div className="space-y-6">
+            {kpis.ok ? <KpiSection kpis={kpis.value} /> : <SectionError message={kpis.error} />}
 
-      {overview && (
-        <>
-          <section aria-labelledby="catalogue-heading" className="space-y-3">
-            <h2 id="catalogue-heading" className="text-sm font-semibold text-charcoal/70">
-              Product catalogue · product_info.csv
-            </h2>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <KpiCard label="Products" value={formatInteger(overview.catalogue.total_products)} />
-              <KpiCard label="Brands" value={formatInteger(overview.catalogue.total_brands)} />
-              <KpiCard
-                label="Categories"
-                value={formatInteger(overview.catalogue.total_categories)}
-              />
-              <KpiCard
-                label="Sephora-listed reviews"
-                value={formatCompact(overview.catalogue.sephora_listed_review_count)}
-                source="Catalogue count, not review records"
-              />
+            <div className="grid gap-6 xl:grid-cols-3">
+              <div className="min-w-0 xl:col-span-2">
+                {trend.ok ? <ReviewActivityCard points={trend.value.points} /> : <SectionError message={trend.error} />}
+              </div>
+              {ratings.ok ? <RatingDistributionCard data={ratings.value} /> : <SectionError message={ratings.error} />}
             </div>
-          </section>
 
-          <section aria-labelledby="reviews-heading" className="space-y-3">
-            <h2 id="reviews-heading" className="text-sm font-semibold text-charcoal/70">
-              Review records · {overview.reviews.review_scope_category ?? "all"} products
-            </h2>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <KpiCard
-                label="Reviews"
-                value={formatInteger(overview.reviews.review_count)}
-                source={`${formatInteger(overview.reviews.duplicate_reviews_removed)} exact duplicates removed`}
-              />
-              <KpiCard
-                label="Average rating"
-                value={formatRating(overview.reviews.average_rating)}
-              />
-              <KpiCard
-                label="Five-star share"
-                value={formatPercent(overview.reviews.five_star_share)}
-              />
-              <KpiCard
-                label="Reviewed products"
-                value={formatInteger(overview.reviews.reviewed_products)}
-                source={`${formatMonthYear(overview.reviews.first_review_date)} – ${formatMonthYear(overview.reviews.last_review_date)}`}
-              />
+            <div className="grid gap-6 lg:grid-cols-2">
+              <ChartCard
+                title="Top 10 most reviewed products"
+                subtitle="Ranked by number of review records"
+                scope="reviews"
+              >
+                {!topProducts.ok ? (
+                  <SectionError message={topProducts.error} />
+                ) : topProducts.value.length === 0 ? (
+                  <EmptyState />
+                ) : (
+                  <RankedBarList
+                    ariaLabel="Top 10 most reviewed products"
+                    items={topProducts.value.map((p) => ({
+                      key: p.product_id,
+                      label: p.product_name,
+                      sublabel: p.brand_name,
+                      value: p.review_count,
+                      display: formatInteger(p.review_count),
+                      secondary: `★ ${formatRating(p.average_rating)}`,
+                    }))}
+                  />
+                )}
+              </ChartCard>
+
+              <ChartCard
+                title={`Most reviewed products in ${filters.rankYear}`}
+                subtitle={
+                  byYear.ok
+                    ? `${formatInteger(byYear.value.total_reviews_in_year)} reviews in ${filters.rankYear}`
+                    : undefined
+                }
+                scope="reviews"
+                action={<YearSelect filters={filters} domain={domain} />}
+              >
+                {!byYear.ok ? (
+                  <SectionError message={byYear.error} />
+                ) : byYear.value.items.length === 0 ? (
+                  <EmptyState message={`No reviews match the current filters in ${filters.rankYear}.`} />
+                ) : (
+                  <RankedBarList
+                    ariaLabel={`Most reviewed products in ${filters.rankYear}`}
+                    items={byYear.value.items.map((p) => ({
+                      key: p.product_id,
+                      label: p.product_name,
+                      sublabel: p.brand_name,
+                      value: p.review_count,
+                      display: formatInteger(p.review_count),
+                      secondary: `★ ${formatRating(p.average_rating)}`,
+                    }))}
+                  />
+                )}
+              </ChartCard>
             </div>
-          </section>
-        </>
-      )}
-    </div>
+
+            <div className="grid gap-6 lg:grid-cols-2">
+              <ChartCard title="Top brands by review volume" subtitle="Share of review records" scope="reviews">
+                {!brands.ok ? (
+                  <SectionError message={brands.error} />
+                ) : brands.value.items.length === 0 ? (
+                  <EmptyState />
+                ) : (
+                  <RankedBarList
+                    ariaLabel="Top brands by review volume"
+                    items={brands.value.items.map((b) => ({
+                      key: b.brand_name,
+                      label: b.brand_name,
+                      sublabel: plural(b.reviewed_products, "product"),
+                      value: b.review_count,
+                      display: formatInteger(b.review_count),
+                      secondary: `${formatPercent(b.share)} · ★ ${formatRating(b.average_rating)}`,
+                    }))}
+                  />
+                )}
+              </ChartCard>
+
+              <ChartCard
+                title="Average rating by Skincare subcategory"
+                subtitle="Bars run on the full 0–5 rating scale; review count shown beneath each rating"
+                scope="reviews"
+              >
+                {!reviewCats.ok ? (
+                  <SectionError message={reviewCats.error} />
+                ) : reviewCats.value.items.length === 0 ? (
+                  <EmptyState />
+                ) : (
+                  <RankedBarList
+                    ariaLabel="Average rating by Skincare subcategory"
+                    max={5}
+                    items={[...reviewCats.value.items]
+                      .sort((a, b) => b.average_rating - a.average_rating || b.review_count - a.review_count)
+                      .map((c) => ({
+                        key: c.subcategory,
+                        label: c.subcategory,
+                        value: c.average_rating,
+                        display: formatRating(c.average_rating),
+                        secondary: `${formatInteger(c.review_count)} reviews`,
+                      }))}
+                  />
+                )}
+              </ChartCard>
+            </div>
+
+            {heatmap.ok ? <ActivityHeatmapCard data={heatmap.value} /> : <SectionError message={heatmap.error} />}
+
+            <div className="grid gap-6 lg:grid-cols-2">
+              <ChartCard
+                title="Product catalogue by category"
+                subtitle="Products per primary category, all nine categories"
+                scope="catalogue"
+              >
+                {!catalogueCats.ok ? (
+                  <SectionError message={catalogueCats.error} />
+                ) : (
+                  <RankedBarList
+                    ariaLabel="Products per catalogue category"
+                    items={catalogueCats.value.items.map((c) => ({
+                      key: c.category,
+                      label: c.category,
+                      sublabel: plural(c.brand_count, "brand"),
+                      value: c.product_count,
+                      display: formatInteger(c.product_count),
+                      secondary: formatPercent(c.share_of_products),
+                    }))}
+                  />
+                )}
+              </ChartCard>
+              {prices.ok ? <PriceDistributionCard data={prices.value} /> : <SectionError message={prices.error} />}
+            </div>
+
+            {popularity.ok ? (
+              <RatingPopularityCard data={popularity.value} minReviews={MIN_REVIEWS_SCATTER} />
+            ) : (
+              <SectionError message={popularity.error} />
+            )}
+          </div>
+        </PendingFrame>
+      </main>
+    </>
   );
 }
