@@ -1,4 +1,13 @@
 ,author_id,rating,is_recommended,helpfulness,total_feedback_count,total_neg_feedback_count,total_pos_feedback_count,submission_time,review_text,review_title,skin_tone,eye_color,skin_type,hair_color,product_id,product_name,brand_name,price_usd
-0,A001,5,1.0,1.0,2,0,2,2021-03-01,Lovely synthetic text,Great,light,brown,dry,black,PTEST1,Synthetic Gel Cleanser,Test Brand A,20.0
-1,A002,4,1.0,,0,0,0,2022-07-15,Nice synthetic text,Good,,blue,oily,,PTEST1,Synthetic Gel Cleanser,Test Brand A,20.0
-2,A003,1,0.0,0.5,4,2,2,2019-01-10,Not for me,Meh,medium,green,combination,brown,PTEST2,Synthetic Night Cream,Test Brand B,45.0
+0,A01,5,1.0,1.0,2,0,2,2019-03-10,"Gentle cleanser, my skin feels soft",Soft skin,light,brown,dry,black,P1001,Synthetic Gel Cleanser,Alpha Labs,20.0
+1,A02,4,1.0,,0,0,0,2019-07-22,Nice foam and clean feel,Good,fair,blue,oily,blonde,P1001,Synthetic Gel Cleanser,Alpha Labs,20.0
+2,A03,1,0.0,0.25,4,3,1,2020-01-05,Broke me out badly,Not for me,medium,green,combination,brown,P1002,Synthetic Night Cream,Alpha Labs,45.0
+3,A04,5,1.0,0.8,5,1,4,2020-01-18,Best night cream for dry skin,Love it,tan,brown,dry,black,P1002,Synthetic Night Cream,Alpha Labs,45.0
+4,A05,3,,,0,0,0,2020-06-30,"It is okay, nothing special",Okay,,,,,P1002,Synthetic Night Cream,Alpha Labs,45.0
+5,A06,5,1.0,1.0,1,0,1,2021-02-14,Glowing skin after a week of this serum,Glow,deep,brown,normal,black,P1003,Synthetic Vitamin Serum,Beta Botanics,68.0
+6,A07,2,0.0,0.0,3,3,0,2021-02-20,Serum made my skin sting,Stings,light,hazel,combination,red,P1003,Synthetic Vitamin Serum,Beta Botanics,68.0
+7,A08,4,1.0,,0,0,0,2021-11-03,"Light lotion, absorbs fast",Nice lotion,fair,blue,normal,blonde,P1004,Synthetic Day Lotion,Beta Botanics,32.0
+8,A09,5,1.0,1.0,6,0,6,2022-05-09,Holy grail cleanser,Holy grail,medium,brown,oily,brown,P1001,Synthetic Gel Cleanser,Alpha Labs,20.0
+9,A10,5,1.0,0.5,2,1,1,2022-08-15,"Great serum, visible results",Results,tan,green,combination,black,P1003,Synthetic Vitamin Serum,Beta Botanics,68.0
+10,A01,4,1.0,,0,0,0,2023-01-02,Still a good cleanser,Repurchase,light,brown,dry,black,P1001,Synthetic Gel Cleanser,Alpha Labs,20.0
+11,A11,1,0.0,0.0,2,2,0,2023-02-28,Too greasy for oily skin,Greasy,fair,gray,oily,blonde,P1002,Synthetic Night Cream,Alpha Labs,45.0

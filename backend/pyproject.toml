@@ -1,6 +1,6 @@
 [project]
 name = "sephora-business-insight-api"
-version = "0.1.0"
+version = "0.2.0"
 requires-python = ">=3.12"
 
 [tool.pytest.ini_options]
@@ -12,4 +12,7 @@ line-length = 100
 target-version = "py312"
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "B", "UP"]
+select = ["E", "F", "I", "B", "UP", "S"]  # S = bandit security rules
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]  # asserts are how pytest works
