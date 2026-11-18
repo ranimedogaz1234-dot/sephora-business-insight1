@@ -90,8 +90,7 @@ def read_raw_reviews(data_dir: Path) -> tuple[pd.DataFrame, tuple[str, ...]]:
     if not files:
         raise DatasetNotFoundError(f"No {REVIEW_GLOB} files in {data_dir}")
     frames = [
-        pd.read_csv(f, usecols=lambda c: c in REVIEW_COLUMNS, dtype=REVIEW_DTYPES)
-        for f in files
+        pd.read_csv(f, usecols=lambda c: c in REVIEW_COLUMNS, dtype=REVIEW_DTYPES) for f in files
     ]
     raw = pd.concat(frames, ignore_index=True)[REVIEW_COLUMNS]
     return raw, tuple(f.name for f in files)
