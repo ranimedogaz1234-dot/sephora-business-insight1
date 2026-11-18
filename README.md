@@ -84,6 +84,22 @@ Review-based sections follow the filters; catalogue sections (category mix, pric
 distribution, catalogue counts) always describe all products and are labelled as such.
 Sections planned for later parts appear in the sidebar as "Soon" and are not links.
 
+**Product Analytics** (`/products`) explores the whole catalogue (8,494 products, all nine
+categories). Search (name or brand, debounced, minimum 2 characters), category → subcategory,
+brand, price range and minimum catalogue rating filters, sorting from a preset menu or any
+sortable column header, and pagination all run on the backend (`GET /products`); the state lives
+in the URL. The table keeps Sephora's catalogue rating and review count separate from the
+review-record count (Skincare only).
+
+**Product details** (`/products/[productId]`) show catalogue facts (price, size, variants,
+flags, highlights, ingredients as listed), and — for products with review records — headline
+review figures, the rating distribution, the review trend, paginated customer reviews (sort by
+recency, helpfulness or rating; filter by stars) and data-derived insights. Insights only
+restate computed figures: rating and recommendation rate vs the same Skincare subcategory,
+share of 1–2 star ratings, price vs the catalogue category median and the most active review
+year; comparisons are skipped below 30 review records. Products outside Skincare state plainly
+that the review dataset does not cover them.
+
 Design system: white-dominant surfaces, burgundy `#800F35` for emphasis and data marks,
 soft pink for selection highlights, Playfair Display for editorial headings and Geist for
 all figures, labels and tables. Text colours meet WCAG AA; the heatmap ramp is a single
