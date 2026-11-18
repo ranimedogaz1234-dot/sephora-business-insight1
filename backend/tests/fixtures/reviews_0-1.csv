@@ -1,0 +1,4 @@
+,author_id,rating,is_recommended,helpfulness,total_feedback_count,total_neg_feedback_count,total_pos_feedback_count,submission_time,review_text,review_title,skin_tone,eye_color,skin_type,hair_color,product_id,product_name,brand_name,price_usd
+0,A001,5,1.0,1.0,2,0,2,2021-03-01,Lovely synthetic text,Great,light,brown,dry,black,PTEST1,Synthetic Gel Cleanser,Test Brand A,20.0
+1,A002,4,1.0,,0,0,0,2022-07-15,Nice synthetic text,Good,,blue,oily,,PTEST1,Synthetic Gel Cleanser,Test Brand A,20.0
+2,A003,1,0.0,0.5,4,2,2,2019-01-10,Not for me,Meh,medium,green,combination,brown,PTEST2,Synthetic Night Cream,Test Brand B,45.0
