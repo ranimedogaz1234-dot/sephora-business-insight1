@@ -33,5 +33,14 @@ for f in $(echo "$files" | grep '^backend/tests/fixtures/.*\.csv$' || true); do
   fi
 done
 
+# Local guard: source code must never be silently excluded by an over-broad
+# ignore rule (only meaningful in a working copy, not in a fresh CI checkout).
+ignored_src=$(git ls-files --others --ignored --exclude-standard -- backend/app frontend/src \
+  | grep -vE '(__pycache__/|\.pyc$)' || true)
+if [ -n "$ignored_src" ]; then
+  echo "ERROR: source files are ignored by .gitignore and would not be committed:"
+  echo "$ignored_src"; status=1
+fi
+
 [ $status -eq 0 ] && echo "Repository safety check passed."
 exit $status

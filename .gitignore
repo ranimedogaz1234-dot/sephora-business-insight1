@@ -1,9 +1,11 @@
 # ---------------------------------------------------------------
 # Private data — the original Sephora CSV files must NEVER be committed
 # ---------------------------------------------------------------
-data/
-datasets/
-archive/
+# Dataset folders are anchored to the repo root (a leading "/") so they do not
+# also match source packages such as backend/app/data/.
+/data/
+/datasets/
+/archive/
 *.csv
 *.parquet
 *.feather
