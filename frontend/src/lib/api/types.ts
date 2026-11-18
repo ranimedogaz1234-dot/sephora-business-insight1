@@ -263,4 +263,131 @@ export interface ReviewFilterParams {
   date_to?: string;
   brand?: string[];
   subcategory?: string[];
+  product_id?: string[];
+  rating?: number[];
+}
+
+// ------------------------------------------------------------------ paging
+export interface Page<T> {
+  items: T[];
+  page: number;
+  page_size: number;
+  /** Matching rows across all pages. */
+  total: number;
+  /** 0 when nothing matches. */
+  total_pages: number;
+}
+
+export type SortOrder = "asc" | "desc";
+
+// ------------------------------------------------------------------ catalogue products
+/** Whitelisted sort fields of GET /products (backend ProductSortField). */
+export type ProductSortField =
+  | "product_name"
+  | "brand_name"
+  | "price_usd"
+  | "catalogue_rating"
+  | "loves_count"
+  | "sephora_review_count"
+  | "review_record_count"
+  | "review_average_rating";
+
+export interface ProductListParams {
+  q?: string;
+  primary_category?: string[];
+  secondary_category?: string[];
+  brand?: string[];
+  price_min?: number;
+  price_max?: number;
+  min_catalogue_rating?: number;
+  sort_by?: ProductSortField;
+  order?: SortOrder;
+  page?: number;
+  page_size?: number;
+}
+
+export interface ProductItem {
+  product_id: string;
+  product_name: string;
+  brand_name: string;
+  primary_category: string;
+  secondary_category: string | null;
+  tertiary_category: string | null;
+  price_usd: number;
+  sale_price_usd: number | null;
+  loves_count: number;
+  /** Sephora's catalogue rating (all categories). */
+  catalogue_rating: number | null;
+  /** Sephora's catalogue review count — NOT review records. */
+  sephora_review_count: number | null;
+  /** Rows in the review CSV files (Skincare only). */
+  review_record_count: number;
+  /** Mean rating of the review CSV rows. */
+  review_average_rating: number | null;
+  new: boolean;
+  limited_edition: boolean;
+  sephora_exclusive: boolean;
+  online_only: boolean;
+  out_of_stock: boolean;
+}
+
+export interface ProductReviewStats {
+  review_record_count: number;
+  average_rating: number | null;
+  five_star_share: number | null;
+  recommendation_rate: number | null;
+  rating_distribution: RatingBucket[];
+  first_review_date: string | null;
+  last_review_date: string | null;
+}
+
+export interface ProductDetail extends ProductItem {
+  brand_id: number;
+  size: string | null;
+  variation_type: string | null;
+  variation_value: string | null;
+  value_price_usd: number | null;
+  child_count: number;
+  highlights: string[];
+  ingredients: string[];
+  review_stats: ProductReviewStats;
+}
+
+// ------------------------------------------------------------------ review records
+/** Whitelisted sort fields of GET /reviews (backend ReviewSortField). */
+export type ReviewSortField =
+  | "submission_time"
+  | "rating"
+  | "helpfulness"
+  | "total_feedback_count"
+  | "total_pos_feedback_count";
+
+export interface ReviewListParams extends ReviewFilterParams {
+  q?: string;
+  sort_by?: ReviewSortField;
+  order?: SortOrder;
+  page?: number;
+  page_size?: number;
+}
+
+/** One review record. The reviewer's author_id is never exposed by the API. */
+export interface ReviewItem {
+  review_id: string;
+  product_id: string;
+  product_name: string;
+  brand_name: string;
+  subcategory: string | null;
+  rating: number;
+  is_recommended: boolean | null;
+  helpfulness: number | null;
+  total_feedback_count: number;
+  total_pos_feedback_count: number;
+  total_neg_feedback_count: number;
+  submission_date: string;
+  review_title: string | null;
+  review_text: string | null;
+  skin_tone: string | null;
+  skin_type: string | null;
+  eye_color: string | null;
+  hair_color: string | null;
 }

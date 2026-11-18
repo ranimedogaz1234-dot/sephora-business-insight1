@@ -6,7 +6,13 @@ import type {
   FilterOptions,
   HealthResponse,
   OverviewResponse,
+  Page,
   PriceDistribution,
+  ProductDetail,
+  ProductItem,
+  ProductListParams,
+  ReviewItem,
+  ReviewListParams,
   RankedProduct,
   RatingDistribution,
   RatingPopularity,
@@ -84,7 +90,12 @@ export const api = {
       limit,
     }),
   topBrands: (f: F = {}, limit = 10) => apiGet<TopBrands>("/brands/top", { ...f, limit }),
-  catalogueCategories: () => apiGet<CatalogueCategories>("/categories/catalogue"),
+  catalogueCategories: (parent?: string) =>
+    apiGet<CatalogueCategories>("/categories/catalogue", { parent }),
+  products: (q: ProductListParams = {}) => apiGet<Page<ProductItem>>("/products", { ...q }),
+  product: (productId: string) =>
+    apiGet<ProductDetail>(`/products/${encodeURIComponent(productId)}`),
+  reviews: (q: ReviewListParams = {}) => apiGet<Page<ReviewItem>>("/reviews", { ...q }),
   reviewCategories: (f: F = {}) => apiGet<ReviewCategories>("/categories/reviews", { ...f }),
   priceDistribution: (binWidth = 10, maxPrice = 300) =>
     apiGet<PriceDistribution>("/prices/distribution", {
