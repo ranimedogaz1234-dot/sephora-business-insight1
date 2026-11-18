@@ -78,6 +78,19 @@ npm run dev
 
 Open http://localhost:3001 (the dev server uses port 3001 so it never collides with other projects on 3000).
 
+The **Executive Overview** (`/`) is a server-rendered dashboard. Global filters (period,
+Skincare subcategory, brand) live in the URL, so every view can be shared or bookmarked.
+Review-based sections follow the filters; catalogue sections (category mix, price
+distribution, catalogue counts) always describe all products and are labelled as such.
+Sections planned for later parts appear in the sidebar as "Soon" and are not links.
+
+Design system: white-dominant surfaces, burgundy `#800F35` for emphasis and data marks,
+soft pink for selection highlights, Playfair Display for editorial headings and Geist for
+all figures, labels and tables. Text colours meet WCAG AA; the heatmap ramp is a single
+validated burgundy hue. Every chart has a table view, hover/focus tooltips and an empty
+state, and the layout works from 375px phones (drawer navigation) to wide desktops
+(collapsible sidebar).
+
 ### Tests
 
 ```powershell
