@@ -4,6 +4,7 @@ import { KpiCard } from "@/components/ui/KpiCard";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { api } from "@/lib/api/client";
 import type { HealthResponse, OverviewResponse } from "@/lib/api/types";
+import { config } from "@/lib/config";
 import {
   formatCompact,
   formatInteger,
@@ -17,15 +18,33 @@ async function load(): Promise<{
   overview: OverviewResponse | null;
   error: string | null;
 }> {
+  let health: HealthResponse;
   try {
-    const health = await api.health();
-    if (!health.dataset_available) {
-      return { health, overview: null, error: "Dataset folder not configured (SBI_DATA_DIR)." };
-    }
+    health = await api.health();
+  } catch (e) {
+    return {
+      health: null,
+      overview: null,
+      error: `Cannot reach the API at ${config.apiBaseUrl} (${(e as Error).message}).`,
+    };
+  }
+  if (!health.dataset_available) {
+    return {
+      health,
+      overview: null,
+      error: "The API is running but cannot find the CSV files. Check SBI_DATA_DIR in backend/.env.",
+    };
+  }
+  try {
     return { health, overview: await api.overview(), error: null };
   } catch (e) {
-    return { health: null, overview: null, error: (e as Error).message };
+    return { health, overview: null, error: `Overview request failed: ${(e as Error).message}` };
   }
+}
+
+function datasetLabel(health: HealthResponse | null): string {
+  if (!health) return "Dataset status unknown";
+  return health.dataset_available ? "Dataset found" : "Dataset missing";
 }
 
 export default async function OverviewPage() {
@@ -41,10 +60,7 @@ export default async function OverviewPage() {
         </div>
         <div className="flex gap-2">
           <StatusBadge ok={!!health} label={health ? "API connected" : "API offline"} />
-          <StatusBadge
-            ok={!!health?.dataset_available}
-            label={health?.dataset_available ? "Dataset found" : "Dataset missing"}
-          />
+          <StatusBadge ok={!!health?.dataset_available} label={datasetLabel(health)} />
         </div>
       </header>
 

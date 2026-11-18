@@ -52,7 +52,7 @@ copy .env.example .env   # then set SBI_DATA_DIR to your dataset folder
 .venv\Scripts\python -m uvicorn app.main:app --reload --port 8000
 ```
 
-API docs: http://localhost:8000/docs — health: http://localhost:8000/api/v1/health
+API docs: http://127.0.0.1:8000/docs — health: http://127.0.0.1:8000/api/v1/health
 
 On first start the six CSVs are read once (~20–35 s) and a Parquet cache is written to
 `SBI_CACHE_DIR` (default `backend/.cache/`, gitignored). Later starts load the cache in
@@ -76,7 +76,7 @@ copy .env.example .env.local
 npm run dev
 ```
 
-Open http://localhost:3000.
+Open http://localhost:3001 (the dev server uses port 3001 so it never collides with other projects on 3000).
 
 ### Tests
 

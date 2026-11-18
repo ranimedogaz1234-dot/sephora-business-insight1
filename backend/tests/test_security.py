@@ -110,9 +110,9 @@ def test_api_is_read_only(client):
 def test_cors_allows_only_configured_origins_and_get(client):
     ok = client.options(
         "/api/v1/kpis",
-        headers={"Origin": "http://localhost:3000", "Access-Control-Request-Method": "GET"},
+        headers={"Origin": "http://localhost:3001", "Access-Control-Request-Method": "GET"},
     )
-    assert ok.headers.get("access-control-allow-origin") == "http://localhost:3000"
+    assert ok.headers.get("access-control-allow-origin") == "http://localhost:3001"
     bad_origin = client.options(
         "/api/v1/kpis",
         headers={"Origin": "https://evil.example", "Access-Control-Request-Method": "GET"},
@@ -120,7 +120,7 @@ def test_cors_allows_only_configured_origins_and_get(client):
     assert "access-control-allow-origin" not in bad_origin.headers
     post = client.options(
         "/api/v1/kpis",
-        headers={"Origin": "http://localhost:3000", "Access-Control-Request-Method": "POST"},
+        headers={"Origin": "http://localhost:3001", "Access-Control-Request-Method": "POST"},
     )
     assert post.status_code == 400
 
