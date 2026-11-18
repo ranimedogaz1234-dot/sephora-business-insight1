@@ -22,8 +22,24 @@ class Settings(BaseSettings):
     # Folder holding product_info.csv and the reviews_*.csv files.
     # Kept OUTSIDE the repository — the original datasets are private.
     data_dir: Path = Field(default=BACKEND_DIR.parent / "data")
-    cors_origins: list[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
+    # Persistent Parquet cache of the prepared dataset (derived private data: never commit).
+    cache_dir: Path = Field(default=BACKEND_DIR / ".cache")
+    cache_enabled: bool = True
+    # Also compare SHA-256 of the source CSVs when validating the cache (slower start).
+    cache_verify_hash: bool = False
+    # Load the dataset when the server starts instead of on the first data request.
+    preload: bool = False
+    # Frontend dev server runs on 3001 so it never collides with other projects on 3000.
+    cors_origins: list[str] = ["http://localhost:3001", "http://127.0.0.1:3001"]
     api_prefix: str = "/api/v1"
+
+    @property
+    def is_production(self) -> bool:
+        return self.environment.lower() == "production"
+
+    @property
+    def effective_cache_dir(self) -> Path | None:
+        return self.cache_dir if self.cache_enabled else None
 
 
 @lru_cache

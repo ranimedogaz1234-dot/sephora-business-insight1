@@ -1,4 +1,4 @@
-"""CSV loading and cleaning.
+"""Raw CSV reading and review cleaning.
 
 The six CSV files are the single source of truth — there is no database.
 
@@ -10,6 +10,10 @@ Review cleaning rules
   Reviews that look similar but differ in any meaningful field are preserved.
 * Every review receives a stable identifier derived from a deterministic hash
   of its content, so the same review always gets the same ``review_id``.
+
+The column set and dtypes used for hashing are part of the ID contract: changing
+them changes every ``review_id``. Typed/optimised frames are built afterwards in
+:mod:`app.data.prepare`.
 """
 
 from __future__ import annotations
@@ -43,6 +47,7 @@ REVIEW_COLUMNS: list[str] = [
     "price_usd",
 ]
 
+# Dtypes used when reading reviews. Part of the review_id contract (see module doc).
 REVIEW_DTYPES = {
     "author_id": "string",
     "product_id": "string",
@@ -62,9 +67,9 @@ class DatasetNotFoundError(FileNotFoundError):
 
 
 @dataclass(frozen=True)
-class Dataset:
+class RawData:
     products: pd.DataFrame
-    reviews: pd.DataFrame
+    reviews: pd.DataFrame  # deduplicated, with review_id
     raw_review_count: int
     duplicate_reviews_removed: int
     review_files: tuple[str, ...]
@@ -74,6 +79,11 @@ def find_review_files(data_dir: Path) -> list[Path]:
     return sorted(data_dir.glob(REVIEW_GLOB))
 
 
+def source_files(data_dir: Path) -> list[Path]:
+    """All CSV files that make up the dataset (catalogue first, then reviews)."""
+    return [data_dir / PRODUCT_FILE, *find_review_files(data_dir)]
+
+
 def dataset_available(data_dir: Path) -> bool:
     return (data_dir / PRODUCT_FILE).is_file() and bool(find_review_files(data_dir))
 
@@ -81,14 +91,14 @@ def dataset_available(data_dir: Path) -> bool:
 def load_products(data_dir: Path) -> pd.DataFrame:
     path = data_dir / PRODUCT_FILE
     if not path.is_file():
-        raise DatasetNotFoundError(f"Missing {PRODUCT_FILE} in {data_dir}")
+        raise DatasetNotFoundError(f"Missing {PRODUCT_FILE}")
     return pd.read_csv(path, dtype={"product_id": "string", "brand_name": "string"})
 
 
 def read_raw_reviews(data_dir: Path) -> tuple[pd.DataFrame, tuple[str, ...]]:
     files = find_review_files(data_dir)
     if not files:
-        raise DatasetNotFoundError(f"No {REVIEW_GLOB} files in {data_dir}")
+        raise DatasetNotFoundError(f"No {REVIEW_GLOB} files")
     frames = [
         pd.read_csv(f, usecols=lambda c: c in REVIEW_COLUMNS, dtype=REVIEW_DTYPES) for f in files
     ]
@@ -103,25 +113,25 @@ def add_review_ids(reviews: pd.DataFrame) -> pd.DataFrame:
     stable across runs, machines and file orderings. Exact duplicates are
     removed beforehand, which makes the content hash unique per review.
     """
-    hashes = pd.util.hash_pandas_object(reviews[REVIEW_COLUMNS], index=False)
-    ids = hashes.map(lambda h: f"r_{h:016x}")
+    hashes = pd.util.hash_pandas_object(reviews[REVIEW_COLUMNS], index=False).to_numpy()
     out = reviews.copy()
-    out.insert(0, "review_id", ids.astype("string"))
+    out.insert(0, "review_id", pd.array([f"r_{h:016x}" for h in hashes], dtype="string"))
     return out
 
 
 def clean_reviews(raw: pd.DataFrame) -> tuple[pd.DataFrame, int]:
     deduped = raw.drop_duplicates(keep="first").reset_index(drop=True)
     removed = len(raw) - len(deduped)
+    # Parse dates BEFORE hashing: review_ids were defined on the parsed column.
     deduped["submission_time"] = pd.to_datetime(deduped["submission_time"], errors="coerce")
     return add_review_ids(deduped), removed
 
 
-def load_dataset(data_dir: Path) -> Dataset:
+def read_dataset(data_dir: Path) -> RawData:
     products = load_products(data_dir)
     raw, files = read_raw_reviews(data_dir)
     reviews, removed = clean_reviews(raw)
-    return Dataset(
+    return RawData(
         products=products,
         reviews=reviews,
         raw_review_count=len(raw),

@@ -1,4 +1,9 @@
-product_id,product_name,brand_id,brand_name,loves_count,rating,reviews,price_usd,primary_category,secondary_category,tertiary_category
-PTEST1,Synthetic Gel Cleanser,1,Test Brand A,100,4.5,10,20.0,Skincare,Cleansers,Face Wash
-PTEST2,Synthetic Night Cream,2,Test Brand B,200,4.0,25,45.0,Skincare,Moisturizers,Night Creams
-PTEST3,Synthetic Lipstick,2,Test Brand B,50,3.5,7,18.0,Makeup,Lip,Lipstick
+product_id,product_name,brand_id,brand_name,loves_count,rating,reviews,size,variation_type,variation_value,variation_desc,ingredients,price_usd,value_price_usd,sale_price_usd,limited_edition,new,online_only,out_of_stock,sephora_exclusive,highlights,primary_category,secondary_category,tertiary_category,child_count,child_max_price,child_min_price
+P1001,Synthetic Gel Cleanser,1,Alpha Labs,1200,4.5,40,50 mL,Size,50 mL,,"['Water, Glycerin.', 'Synthetic test ingredient list.']",20.0,,,0,0,0,0,0,"['Vegan', 'Synthetic highlight']",Skincare,Cleansers,Face Wash & Cleansers,0,,
+P1002,Synthetic Night Cream,1,Alpha Labs,3400,4.2,85,50 mL,Size,50 mL,,"['Water, Glycerin.', 'Synthetic test ingredient list.']",45.0,,,0,0,0,0,1,"['Vegan', 'Synthetic highlight']",Skincare,Moisturizers,Night Creams,0,,
+P1003,Synthetic Vitamin Serum,2,Beta Botanics,5600,4.0,120,50 mL,Size,50 mL,,"['Water, Glycerin.', 'Synthetic test ingredient list.']",68.0,,,0,1,0,0,0,"['Vegan', 'Synthetic highlight']",Skincare,Treatments,Face Serums,0,,
+P1004,Synthetic Day Lotion,2,Beta Botanics,800,3.8,15,50 mL,Size,50 mL,,"['Water, Glycerin.', 'Synthetic test ingredient list.']",32.0,,,0,0,0,0,0,"['Vegan', 'Synthetic highlight']",Skincare,Moisturizers,Moisturizers,0,,
+P1005,Synthetic Clay Mask,3,Gamma Glow,300,,,50 mL,Size,50 mL,,"['Water, Glycerin.', 'Synthetic test ingredient list.']",28.0,,,0,0,0,1,0,"['Vegan', 'Synthetic highlight']",Skincare,Masks,Face Masks,0,,
+P1006,Synthetic Lipstick,3,Gamma Glow,2500,4.4,60,50 mL,Size,50 mL,,"['Water, Glycerin.', 'Synthetic test ingredient list.']",24.0,,,0,0,0,0,0,"['Vegan', 'Synthetic highlight']",Makeup,Lip,Lipstick,0,,
+P1007,Synthetic Eau de Parfum,4,Delta Scents,900,4.7,30,50 mL,Size,50 mL,,"['Water, Glycerin.', 'Synthetic test ingredient list.']",150.0,,,1,0,0,0,0,"['Vegan', 'Synthetic highlight']",Fragrance,Women,Perfume,0,,
+P1008,Synthetic Brush Set,4,Delta Scents,150,3.9,5,50 mL,Size,50 mL,,"['Water, Glycerin.', 'Synthetic test ingredient list.']",310.0,,,0,0,1,0,0,"['Vegan', 'Synthetic highlight']",Tools & Brushes,Brushes & Applicators,,0,,
