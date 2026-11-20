@@ -265,6 +265,7 @@ export interface ReviewFilterParams {
   subcategory?: string[];
   product_id?: string[];
   rating?: number[];
+  recommended?: boolean;
 }
 
 // ------------------------------------------------------------------ paging
@@ -390,4 +391,30 @@ export interface ReviewItem {
   skin_type: string | null;
   eye_color: string | null;
   hair_color: string | null;
+}
+
+// ------------------------------------------------------------------ reviewer profiles
+export type ProfileDimensionName = "skin_type" | "skin_tone" | "eye_color" | "hair_color";
+
+export interface ProfileSegment {
+  value: string;
+  review_count: number;
+  /** Share among reviews that answered this attribute. */
+  share: number;
+  average_rating: number;
+  five_star_share: number;
+  recommendation_rate: number | null;
+}
+
+export interface ProfileDimension {
+  dimension: ProfileDimensionName;
+  answered: number;
+  missing: number;
+  segments: ProfileSegment[];
+}
+
+/** Aggregate, self-reported reviewer attributes (GET /reviews/profiles). */
+export interface ReviewerProfiles {
+  total_reviews: number;
+  dimensions: ProfileDimension[];
 }

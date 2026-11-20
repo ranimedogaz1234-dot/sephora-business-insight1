@@ -13,7 +13,7 @@ describe("Sidebar", () => {
     render(<Sidebar status={online} />);
     const nav = screen.getByRole("navigation", { name: "Main" });
     const links = within(nav).getAllByRole("link");
-    expect(links.map((l) => l.getAttribute("href"))).toEqual(["/", "/products"]);
+    expect(links.map((l) => l.getAttribute("href"))).toEqual(["/", "/products", "/reviews"]);
     expect(links[0]).toHaveAttribute("aria-current", "page");
     expect(links[0]).toHaveTextContent("Executive Overview");
     expect(links[1]).toHaveTextContent("Product Analytics");
@@ -35,8 +35,8 @@ describe("Sidebar", () => {
     );
     expect(within(planned).queryAllByRole("link")).toHaveLength(0);
     expect(plannedLabels).not.toContain("Product Analytics");
+    expect(plannedLabels).not.toContain("Review Analytics");
     for (const label of [
-      "Review Analytics",
       "Brands & Categories",
       "Product Comparison",
       "Data Explorer",
