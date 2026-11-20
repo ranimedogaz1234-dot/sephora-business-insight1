@@ -11,6 +11,7 @@ DATA_ENDPOINTS = [
     "/reviews/rating-distribution",
     "/reviews/trends",
     "/reviews/activity-heatmap",
+    "/reviews/profiles",
     "/reviews?page_size=100",
     "/reviews/r_c78c45e2db818b2b",
     "/products/top-reviewed",

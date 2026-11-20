@@ -129,6 +129,29 @@ class ReviewItem(BaseModel):
     hair_color: str | None
 
 
+class ProfileSegment(BaseModel):
+    value: str
+    review_count: int
+    share: float = Field(description="Share of reviews that answered this attribute")
+    average_rating: float
+    five_star_share: float
+    recommendation_rate: float | None
+
+
+class ProfileDimension(BaseModel):
+    dimension: Literal["skin_type", "skin_tone", "eye_color", "hair_color"]
+    answered: int
+    missing: int
+    segments: list[ProfileSegment]
+
+
+class ReviewerProfiles(BaseModel):
+    """Aggregate, self-reported reviewer attributes. No per-reviewer data is returned."""
+
+    total_reviews: int
+    dimensions: list[ProfileDimension]
+
+
 # --------------------------------------------------------------------------- products
 class RankedProduct(BaseModel):
     rank: int
