@@ -143,6 +143,16 @@ by column, the source columns that were not kept and why, and data-quality check
 pages either table on the server, 25 rows at a time. The reviewer identifier is listed as
 withheld: no statistics or values are returned for it.
 
+**AI Sentiment Analysis** (`/sentiment`) shows positive / neutral / negative sentiment of the
+review text, classified with the Claude API: a distribution donut, sentiment over time, a
+breakdown by brand, Skincare subcategory or product (with a minimum number of classified reviews),
+and insights. Coverage (classified reviews out of all reviews in the selection), the label source
+and the model are always shown. Computed insights restate figures with their evidence; optional
+AI-written insights are generated from those computed figures only and every one cites them.
+Product Comparison shows per-product sentiment where labels exist. Before anything is
+classified, the page explains how to start and shows no figures. See
+[AI sentiment: running the classification](#ai-sentiment-running-the-classification).
+
 Design system: white-dominant surfaces, burgundy `#800F35` for emphasis and data marks,
 soft pink for selection highlights, Playfair Display for editorial headings and Geist for
 all figures, labels and tables. Text colours meet WCAG AA; the heatmap ramp is a single
@@ -166,6 +176,29 @@ cd backend
 .venv\Scripts\python -m scripts.benchmark             # load time, memory, endpoint latency
 $env:SBI_VALIDATE_REAL_DATA="1"; .venv\Scripts\python -m pytest tests/test_realdata.py
 ```
+
+### AI sentiment: running the classification
+
+Classification is deliberate, paid work, so it runs only from the command line on the machine
+that holds the data; the web API only reads stored results and has no endpoint that can start it.
+
+1. Put your key in `backend/.env`: `ANTHROPIC_API_KEY=...` (gitignored; never sent to the browser).
+2. Estimate (free; uses the token-counting endpoint, sends nothing for classification):
+   `python -m app.sentiment.cli estimate --sample 2000`
+3. Pilot: `python -m app.sentiment.cli run --sample 2000 --max-cost 3 --yes`
+4. Check `python -m app.sentiment.cli status` and the page, then classify the rest:
+   `python -m app.sentiment.cli estimate` and `run --max-cost <ceiling> --yes`.
+5. Optional AI-written insights: `python -m app.sentiment.cli insights --max-cost 0.50 --yes`.
+
+Safeguards: a run needs both `--yes` and a `--max-cost` at or above the upper estimate, and stops
+before a batch chunk that could cross it. Requests go through the Message Batches API (50% price)
+with about 20 reviews each and a strict JSON schema; reviews are sent as JSON data and the prompt
+tells the model to ignore instructions inside them. Labels are stored in SQLite under the cache
+folder, keyed by review, with the model and prompt version, so a review is never paid for twice.
+Failed, refused or incomplete groups are split and retried; reviews that still fail stay
+unclassified - nothing is guessed. After a run, estimates use the measured output tokens.
+`seed-synthetic` writes demo labels from star ratings for the synthetic fixtures only (it refuses
+on larger datasets); they are marked as synthetic everywhere.
 
 ## API (v1)
 
@@ -199,6 +232,10 @@ All endpoints are `GET` under `/api/v1`. Interactive docs at `/docs` (disabled w
 | `/categories/reviews` | reviews | Skincare subcategory breakdown |
 | `/prices/distribution` | catalogue | Price histogram with overflow bin and statistics |
 | `/dataset/profile` | catalogue + reviews | Column dictionary, missing values and data-quality checks (aggregates only) |
+| `/sentiment/summary` | reviews | Coverage, label sources and the sentiment distribution |
+| `/sentiment/breakdown?by=brand\|subcategory\|product` | reviews | Sentiment per group above a minimum of classified reviews |
+| `/sentiment/trends?granularity=` | reviews | Classified reviews per sentiment and period |
+| `/sentiment/insights` | reviews | Computed insights with evidence, plus stored AI-written insights |
 
 **Review filters** (all review-based endpoints): `date_from`, `date_to` (inclusive),
 `brand`, `subcategory`, `product_id`, `rating`, `skin_type` (repeat a parameter for
