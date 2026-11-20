@@ -76,7 +76,7 @@ export function ProductTable({ items, filters }: { items: ProductItem[]; filters
   const { setQuery } = useNavigationTransition();
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-line" tabIndex={0} aria-label="Product results, scrollable">
+    <div className="relative overflow-x-auto rounded-xl border border-line" tabIndex={0} aria-label="Product results, scrollable">
       <table className="w-full border-collapse text-sm">
         <caption className="sr-only">Products matching the current filters</caption>
         <thead className="bg-light-gray">

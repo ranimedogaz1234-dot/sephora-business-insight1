@@ -1,92 +1,31 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import type { FormEvent } from "react";
-import { RotateCcw, Search, X } from "lucide-react";
+import { useState } from "react";
+import { RotateCcw, X } from "lucide-react";
 import type { NamedCount } from "@/lib/api/types";
 import { formatInteger } from "@/lib/format";
 import {
-  MAX_SEARCH_LENGTH,
   MIN_RATING_OPTIONS,
-  MIN_SEARCH_LENGTH,
   SORT_PRESETS,
   clearAllProductFilters,
   clearProductChip,
   hasProductFilters,
-  normaliseSearch,
   productChips,
   toProductSearchParams,
   withChanges,
   type ProductFilters,
 } from "@/lib/productFilters";
 import { useNavigationTransition } from "@/components/layout/NavigationTransition";
+import { SearchField } from "@/components/ui/SearchField";
 import { Select } from "@/components/ui/Select";
 
-export const SEARCH_DEBOUNCE_MS = 350;
+export { SEARCH_DEBOUNCE_MS } from "@/components/ui/SearchField";
 
 interface ProductFilterBarProps {
   filters: ProductFilters;
   categories: NamedCount[];
   subcategories: Record<string, NamedCount[]>;
   brands: string[];
-}
-
-/** Search box: applies after a short pause in typing (or on Enter), never per keystroke. */
-function SearchField({ value, onSearch }: { value: string; onSearch: (q: string | undefined) => void }) {
-  const [text, setText] = useState(value);
-  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  useEffect(() => () => clearTimeout(timer.current), []);
-
-  const commit = (raw: string) => {
-    clearTimeout(timer.current);
-    const q = normaliseSearch(raw);
-    if (q !== (value || undefined)) onSearch(q);
-  };
-
-  const onChange = (raw: string) => {
-    setText(raw);
-    clearTimeout(timer.current);
-    timer.current = setTimeout(() => commit(raw), SEARCH_DEBOUNCE_MS);
-  };
-
-  const tooShort = text.trim().length > 0 && text.trim().length < MIN_SEARCH_LENGTH;
-
-  return (
-    <form
-      role="search"
-      className="flex min-w-0 flex-col gap-1 sm:w-72"
-      onSubmit={(e: FormEvent) => {
-        e.preventDefault();
-        commit(text);
-      }}
-    >
-      <label htmlFor="product-search" className="text-[11px] font-medium text-ink-3">
-        Search products or brands
-      </label>
-      <div className="relative">
-        <Search
-          aria-hidden
-          className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-3"
-          strokeWidth={1.75}
-        />
-        <input
-          id="product-search"
-          type="search"
-          value={text}
-          maxLength={MAX_SEARCH_LENGTH}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder="e.g. vitamin c, LANEIGE"
-          aria-describedby={tooShort ? "product-search-hint" : undefined}
-          className="h-9 w-full rounded-md border border-line bg-white pl-8 pr-3 text-sm text-charcoal placeholder:text-ink-3 transition-colors hover:border-line-strong focus:border-burgundy focus:outline-none"
-        />
-      </div>
-      {tooShort && (
-        <p id="product-search-hint" className="text-[11px] text-ink-3">
-          Type at least {MIN_SEARCH_LENGTH} characters
-        </p>
-      )}
-    </form>
-  );
 }
 
 /** Min/max price inputs, applied together on blur or Enter. */
@@ -162,7 +101,14 @@ export function ProductFilterBar({ filters, categories, subcategories, brands }:
       <div className="grid grid-cols-2 items-end gap-3 sm:flex sm:flex-wrap" role="group" aria-label="Product filters">
         <div className="col-span-2 sm:col-span-1">
           {/* Remount when the URL's search changes (e.g. a chip is removed) to resync the text. */}
-          <SearchField key={filters.q ?? ""} value={filters.q ?? ""} onSearch={(q) => change({ q })} />
+          <SearchField
+            key={filters.q ?? ""}
+            id="product-search"
+            label="Search products or brands"
+            placeholder="e.g. vitamin c, LANEIGE"
+            value={filters.q ?? ""}
+            onSearch={(q) => change({ q })}
+          />
         </div>
 
         <Select
