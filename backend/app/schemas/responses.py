@@ -391,3 +391,46 @@ class ReviewOptions(BaseModel):
 class FilterOptions(BaseModel):
     catalogue: CatalogueOptions
     reviews: ReviewOptions
+
+
+# --------------------------------------------------------------------------- dataset profile
+class ColumnProfile(BaseModel):
+    """One source CSV column. Statistics are None when withheld or not applicable."""
+
+    name: str
+    kind: Literal["identifier", "text", "category", "number", "boolean", "date"]
+    description: str
+    exposed: bool = Field(description="False for withheld columns (no statistics returned)")
+    non_null: int | None
+    missing: int | None
+    missing_share: float | None
+    distinct: int | None = None
+    min: float | None = None
+    max: float | None = None
+    mean: float | None = None
+    median: float | None = None
+    date_min: date | None = None
+    date_max: date | None = None
+    median_length: int | None = Field(None, description="Median characters, for text columns")
+
+
+class TableProfile(BaseModel):
+    name: Literal["products", "reviews"]
+    label: str
+    source: str
+    description: str
+    row_count: int
+    columns: list[ColumnProfile]
+    dropped_columns: dict[str, str] = Field(description="Source columns not kept, with the reason")
+
+
+class QualityCheck(BaseModel):
+    name: str
+    status: Literal["pass", "warn", "info"]
+    value: str
+    detail: str
+
+
+class DatasetProfile(BaseModel):
+    tables: list[TableProfile]
+    checks: list[QualityCheck]

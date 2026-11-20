@@ -60,10 +60,10 @@ export const NAV_ITEMS: NavItem[] = [
   },
   {
     label: "Data Explorer",
-    href: null,
+    href: "/explorer",
     description: "Search, filter and page through the records.",
     icon: Table2,
-    status: "planned",
+    status: "available",
   },
   {
     label: "AI Sentiment Analysis",

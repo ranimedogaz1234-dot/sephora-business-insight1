@@ -134,6 +134,15 @@ measure at a time). Each product keeps a fixed, validated identity colour, and e
 legend and a table view. Products outside Skincare are shown without review figures and say so.
 A sentiment section is reserved and states that no sentiment results exist yet.
 
+**Data Explorer** (`/explorer`) documents the data behind every figure. For the product
+catalogue and the review records it shows row and column counts and source files, a column
+dictionary (original CSV names, type, description, present and missing counts, and a value
+summary: range and median, distinct values, date range or median text length), missing values
+by column, the source columns that were not kept and why, and data-quality checks whose status
+(pass, review, info) is computed from the data. A record browser searches, filters, sorts and
+pages either table on the server, 25 rows at a time. The reviewer identifier is listed as
+withheld: no statistics or values are returned for it.
+
 Design system: white-dominant surfaces, burgundy `#800F35` for emphasis and data marks,
 soft pink for selection highlights, Playfair Display for editorial headings and Geist for
 all figures, labels and tables. Text colours meet WCAG AA; the heatmap ramp is a single
@@ -189,6 +198,7 @@ All endpoints are `GET` under `/api/v1`. Interactive docs at `/docs` (disabled w
 | `/categories/catalogue[?parent=&brand=]` | catalogue | All nine primary categories, or one category's subcategories; optionally for one brand |
 | `/categories/reviews` | reviews | Skincare subcategory breakdown |
 | `/prices/distribution` | catalogue | Price histogram with overflow bin and statistics |
+| `/dataset/profile` | catalogue + reviews | Column dictionary, missing values and data-quality checks (aggregates only) |
 
 **Review filters** (all review-based endpoints): `date_from`, `date_to` (inclusive),
 `brand`, `subcategory`, `product_id`, `rating`, `skin_type` (repeat a parameter for
