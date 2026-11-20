@@ -7,8 +7,11 @@ Only classified reviews are counted; coverage is always reported next to the res
 
 from __future__ import annotations
 
+import hashlib
+import logging
 import threading
 from dataclasses import dataclass
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -38,6 +41,8 @@ from app.services.reviews import period_keys, period_label
 # reviews before a computed insight compares them.
 INSIGHT_MIN_CLASSIFIED = 50
 
+log = logging.getLogger(__name__)
+
 
 @dataclass(frozen=True)
 class Aligned:
@@ -51,31 +56,86 @@ _lock = threading.Lock()
 _aligned: dict[tuple, Aligned] = {}
 
 
+def _dataset_fingerprint(ds: Dataset) -> str:
+    """Cheap identity of the review rows: count plus a sample of ids from across the table."""
+    ids = ds.reviews["review_id"]
+    n = len(ids)
+    sample = (
+        [str(ids.iloc[i]) for i in np.linspace(0, n - 1, num=min(n, 64), dtype=int)] if n else []
+    )
+    return hashlib.sha256(f"{n}|{'|'.join(sample)}".encode()).hexdigest()
+
+
+def _sidecar(store: SentimentStore) -> Path:
+    return store.path.with_name(store.path.name + ".aligned.npz")
+
+
+def _load_sidecar(store: SentimentStore, key: str) -> Aligned | None:
+    path = _sidecar(store)
+    if not path.exists():
+        return None
+    try:
+        with np.load(path, allow_pickle=False) as z:
+            if str(z["key"]) != key:
+                return None
+            return Aligned(
+                z["label"], z["source"], tuple(z["models"].tolist()), tuple(z["versions"].tolist())
+            )
+    except (OSError, ValueError, KeyError):
+        return None  # unreadable or old format: rebuild
+
+
+def _save_sidecar(store: SentimentStore, key: str, a: Aligned) -> None:
+    path = _sidecar(store)
+    tmp = path.with_name(path.name + ".tmp.npz")
+    try:
+        np.savez(
+            tmp,
+            key=np.array(key),
+            label=a.label,
+            source=a.source,
+            models=np.array(a.models, dtype=str),
+            versions=np.array(a.prompt_versions, dtype=str),
+        )
+        tmp.replace(path)
+    except OSError:
+        log.warning("Could not write the sentiment alignment cache; continuing without it.")
+
+
 def aligned_labels(ds: Dataset, store: SentimentStore) -> Aligned:
-    key = (id(ds), str(store.path), store.version())
+    """Labels aligned to review rows: in memory per store version, and persisted beside the
+    store (keyed by store version + dataset fingerprint) so a restart does not re-read it."""
+    version = store.version()
+    key = (id(ds), str(store.path), version)
     with _lock:
         if key in _aligned:
             return _aligned[key]
     n = len(ds.reviews)
-    label = np.full(n, -1, dtype=np.int8)
-    source = np.full(n, -1, dtype=np.int8)
-    frame = store.labels_frame()
-    models: tuple[str, ...] = ()
-    versions: tuple[str, ...] = ()
-    if len(frame):
-        pos = pd.Index(ds.reviews["review_id"].astype(str)).get_indexer(frame["review_id"])
-        keep = pos >= 0  # labels for reviews no longer in the dataset are ignored
-        label_codes = pd.Categorical(frame["label"], categories=LABELS).codes
-        source_codes = pd.Categorical(frame["source"], categories=SOURCES).codes
-        label[pos[keep]] = label_codes[keep]
-        source[pos[keep]] = source_codes[keep]
-        models = tuple(sorted(frame.loc[keep, "model"].dropna().unique()))
-        versions = tuple(sorted(frame.loc[keep, "prompt_version"].dropna().unique()))
-    result = Aligned(label, source, models, versions)
+    disk_key = f"{version}|{_dataset_fingerprint(ds)}"
+    result = _load_sidecar(store, disk_key) if version else None
+    if result is None or len(result.label) != n:
+        label = np.full(n, -1, dtype=np.int8)
+        source = np.full(n, -1, dtype=np.int8)
+        ids, labels, sources, models, versions = store.label_rows()
+        if ids:
+            pos = pd.Index(ds.reviews["review_id"].astype(str)).get_indexer(ids)
+            keep = pos >= 0  # labels for reviews no longer in the dataset are ignored
+            label[pos[keep]] = labels[keep]
+            source[pos[keep]] = sources[keep]
+        result = Aligned(label, source, tuple(models), tuple(versions))
+        if version:
+            _save_sidecar(store, disk_key, result)
     with _lock:
         _aligned.clear()  # one store per process; keep memory bounded
         _aligned[key] = result
     return result
+
+
+def _memo(ds: Dataset, store: SentimentStore, name: str, query, compute):
+    """Cache a result per store version and query (results change only when labels do)."""
+    return ds.memo(
+        ("sentiment", name, str(store.path), store.version(), query.cache_key()), compute
+    )
 
 
 def _counts(codes: np.ndarray) -> np.ndarray:
@@ -90,7 +150,7 @@ def _shares(counts: np.ndarray) -> list[LabelShare]:
     ]
 
 
-def summary(ds: Dataset, store: SentimentStore, f: ReviewFilters) -> SentimentSummary:
+def _summary(ds: Dataset, store: SentimentStore, f: ReviewFilters) -> SentimentSummary:
     a = aligned_labels(ds, store)
     mask = review_mask(ds, f)
     codes = a.label[mask]
@@ -124,23 +184,32 @@ def summary(ds: Dataset, store: SentimentStore, f: ReviewFilters) -> SentimentSu
 
 
 def _group_counts(ds: Dataset, a: Aligned, mask: np.ndarray, column: str) -> pd.DataFrame:
-    sel = mask & (a.label >= 0)
-    keys = ds.reviews[column].to_numpy()[sel]
-    labels = a.label[sel]
-    df = pd.DataFrame({"key": pd.Series(keys).astype(str), "label": labels})
-    table = pd.crosstab(df["key"], df["label"]).reindex(columns=range(len(LABELS)), fill_value=0)
-    table.columns = list(LABELS)
+    """Per-group label counts via category codes and one bincount (no string grouping)."""
+    col = ds.reviews[column]
+    if not isinstance(col.dtype, pd.CategoricalDtype):
+        col = col.astype("category")
+    codes = col.cat.codes.to_numpy()
+    sel = mask & (a.label >= 0) & (codes >= 0)
+    k = len(LABELS)
+    n_cat = len(col.cat.categories)
+    grid = np.bincount(codes[sel].astype(np.int64) * k + a.label[sel], minlength=n_cat * k)
+    grid = grid.reshape(n_cat, k)
+    used = grid.sum(axis=1) > 0
+    table = pd.DataFrame(grid[used], columns=list(LABELS))
+    table.insert(0, "key", col.cat.categories.astype(str)[used])
     table["classified"] = table[list(LABELS)].sum(axis=1)
     for lab in LABELS:
         table[f"{lab}_share"] = table[lab] / table["classified"]
     table["net"] = table["positive_share"] - table["negative_share"]
-    return table.reset_index()
+    return table
 
 
 COLUMN = {"brand": "brand_name", "subcategory": "subcategory", "product": "product_id"}
 
 
-def breakdown(ds: Dataset, store: SentimentStore, q: SentimentBreakdownQuery) -> SentimentBreakdown:
+def _breakdown(
+    ds: Dataset, store: SentimentStore, q: SentimentBreakdownQuery
+) -> SentimentBreakdown:
     a = aligned_labels(ds, store)
     mask = review_mask(ds, q)
     table = _group_counts(ds, a, mask, COLUMN[q.by])
@@ -174,7 +243,7 @@ def breakdown(ds: Dataset, store: SentimentStore, q: SentimentBreakdownQuery) ->
     )
 
 
-def trend(ds: Dataset, store: SentimentStore, q: TrendQuery) -> SentimentTrend:
+def _trend(ds: Dataset, store: SentimentStore, q: TrendQuery) -> SentimentTrend:
     a = aligned_labels(ds, store)
     sel = review_mask(ds, q) & (a.label >= 0)
     if not sel.any():
@@ -363,7 +432,7 @@ def computed_insights(ev: dict[str, dict]) -> list[SentimentInsight]:
     return items
 
 
-def insights(ds: Dataset, store: SentimentStore, f: ReviewFilters) -> SentimentInsights:
+def _insights(ds: Dataset, store: SentimentStore, f: ReviewFilters) -> SentimentInsights:
     stored = store.latest_insights()
     ai = None
     if stored and not f.has_review_filters:  # AI insights describe the unfiltered dataset
@@ -377,3 +446,20 @@ def insights(ds: Dataset, store: SentimentStore, f: ReviewFilters) -> SentimentI
         computed=computed_insights(evidence(ds, store, f)),
         ai=ai,
     )
+
+
+# ----------------------------------------------------------------------------- public (cached)
+def summary(ds: Dataset, store: SentimentStore, f: ReviewFilters) -> SentimentSummary:
+    return _memo(ds, store, "summary", f, lambda: _summary(ds, store, f))
+
+
+def breakdown(ds: Dataset, store: SentimentStore, q: SentimentBreakdownQuery) -> SentimentBreakdown:
+    return _memo(ds, store, "breakdown", q, lambda: _breakdown(ds, store, q))
+
+
+def trend(ds: Dataset, store: SentimentStore, q: TrendQuery) -> SentimentTrend:
+    return _memo(ds, store, "trend", q, lambda: _trend(ds, store, q))
+
+
+def insights(ds: Dataset, store: SentimentStore, f: ReviewFilters) -> SentimentInsights:
+    return _memo(ds, store, "insights", f, lambda: _insights(ds, store, f))

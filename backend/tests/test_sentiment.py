@@ -518,3 +518,67 @@ def test_anthropic_backend_parses_batch_results_without_network(monkeypatch):
     )
     assert not out["c"].ok and out["c"].error == "invalid_request"
     assert not out["d"].ok and out["d"].error == "expired"
+
+
+# ----------------------------------------------------------------------------- caching
+def test_cached_results_update_when_labels_change(tmp_path):
+    c = make_client(FIXTURES, tmp_path / "cache")
+    api(c, "/kpis")
+    from app.data.store import _datasets
+
+    ds = next(iter(_datasets.values()))
+    store = SentimentStore(tmp_path / "cache" / "sentiment.sqlite3")
+    first = runner.review_inputs(ds, runner.select_reviews(ds, store, sample=3))
+    store.save_labels(LabelRecord(r.review_id, "negative", "claude", "m", "v") for r in first)
+    assert api(c, "/sentiment/summary")["classified"] == 3
+    assert api(c, "/sentiment/summary")["classified"] == 3  # served from cache
+    rest = runner.review_inputs(ds, runner.select_reviews(ds, store))
+    store.save_labels(LabelRecord(r.review_id, "positive", "claude", "m", "v") for r in rest)
+    body = api(c, "/sentiment/summary")
+    assert body["classified"] == 16 and body["status"] == "complete"
+
+
+def test_alignment_is_persisted_and_rebuilt_on_change(tmp_path):
+    from app.services import sentiment as svc
+
+    c = make_client(FIXTURES, tmp_path / "cache")
+    api(c, "/kpis")
+    from app.data.store import _datasets
+
+    ds = next(iter(_datasets.values()))
+    store = SentimentStore(tmp_path / "cache" / "sentiment.sqlite3")
+    runner.seed_synthetic(ds, store)
+    a = svc.aligned_labels(ds, store)
+    sidecar = svc._sidecar(store)
+    assert sidecar.exists()
+    svc._aligned.clear()  # simulate a restart: the sidecar is used, not the database
+    calls = []
+    original = store.label_rows
+    store.label_rows = lambda: calls.append(1) or original()
+    b = svc.aligned_labels(ds, store)
+    assert calls == [] and (a.label == b.label).all()
+    store.save_labels(
+        [LabelRecord(str(ds.reviews["review_id"].iloc[0]), "neutral", "claude", "m", "v")]
+    )
+    svc._aligned.clear()
+    c2 = svc.aligned_labels(ds, store)
+    assert calls == [1] and c2.label[0] == 1  # stale sidecar ignored and rebuilt
+
+
+def test_fast_and_portable_label_reads_agree(tmp_path):
+    store = SentimentStore(tmp_path / "s.sqlite3")
+    store.save_labels(
+        [
+            LabelRecord("r_b", "negative", "claude", "m1", "v1"),
+            LabelRecord("r_a", "positive", "synthetic", None, "v2"),
+            LabelRecord("r_c", "neutral", "claude", "m2", "v1"),
+        ]
+    )
+    fast = store.label_rows(fast=True)
+    slow = store.label_rows(fast=False)
+    assert fast[0] == slow[0] == ["r_b", "r_a", "r_c"]
+    assert fast[1].tolist() == slow[1].tolist() == [2, 0, 1]
+    assert fast[2].tolist() == slow[2].tolist() == [0, 1, 0]
+    assert fast[3] == ["m1", "m2"] and fast[4] == ["v1", "v2"]
+    empty = SentimentStore(tmp_path / "none.sqlite3").label_rows()
+    assert empty[0] == [] and len(empty[1]) == 0
