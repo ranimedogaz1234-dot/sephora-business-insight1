@@ -1,6 +1,10 @@
 import { config } from "@/lib/config";
 import type {
   ActivityHeatmap,
+  BrandItem,
+  BrandListParams,
+  BrandReviewSortField,
+  BrandReviewStats,
   CatalogueCategories,
   ExecutiveKpis,
   FilterOptions,
@@ -20,6 +24,7 @@ import type {
   ReviewCategories,
   ReviewFilterParams,
   ReviewTrend,
+  SortOrder,
   TopBrands,
   YearRanking,
 } from "./types";
@@ -91,8 +96,21 @@ export const api = {
       limit,
     }),
   topBrands: (f: F = {}, limit = 10) => apiGet<TopBrands>("/brands/top", { ...f, limit }),
-  catalogueCategories: (parent?: string) =>
-    apiGet<CatalogueCategories>("/categories/catalogue", { parent }),
+  catalogueCategories: (parent?: string, brand?: string) =>
+    apiGet<CatalogueCategories>("/categories/catalogue", { parent, brand }),
+  brands: (q: BrandListParams = {}) => apiGet<Page<BrandItem>>("/brands", { ...q }),
+  brand: (name: string) => apiGet<BrandItem>("/brands/detail", { brand: name }),
+  brandReviewStats: (
+    f: F = {},
+    opts: { minReviews?: number; sortBy?: BrandReviewSortField; order?: SortOrder; limit?: number } = {},
+  ) =>
+    apiGet<BrandReviewStats>("/brands/review-stats", {
+      ...f,
+      min_reviews: opts.minReviews,
+      sort_by: opts.sortBy,
+      order: opts.order,
+      limit: opts.limit,
+    }),
   products: (q: ProductListParams = {}) => apiGet<Page<ProductItem>>("/products", { ...q }),
   product: (productId: string) =>
     apiGet<ProductDetail>(`/products/${encodeURIComponent(productId)}`),

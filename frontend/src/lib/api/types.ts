@@ -172,6 +172,58 @@ export interface TopBrands {
   items: RankedBrand[];
 }
 
+/** One catalogue brand (GET /brands, /brands/detail). Review figures are review-record based. */
+export interface BrandItem {
+  brand_name: string;
+  product_count: number;
+  category_count: number;
+  average_price_usd: number;
+  loves_count: number;
+  sephora_review_count: number;
+  review_record_count: number;
+  review_average_rating: number | null;
+}
+
+/** Whitelisted sort fields of GET /brands (backend BrandSortField). */
+export type BrandSortField =
+  | "brand_name"
+  | "product_count"
+  | "average_price"
+  | "loves_count"
+  | "sephora_review_count"
+  | "review_record_count"
+  | "review_average_rating";
+
+export interface BrandListParams {
+  q?: string;
+  sort_by?: BrandSortField;
+  order?: SortOrder;
+  page?: number;
+  page_size?: number;
+}
+
+export type BrandReviewSortField = "review_count" | "average_rating" | "five_star_share" | "recommendation_rate";
+
+export interface BrandReviewStat {
+  rank: number;
+  brand_name: string;
+  review_count: number;
+  share: number;
+  average_rating: number;
+  five_star_share: number;
+  recommendation_rate: number | null;
+  reviewed_products: number;
+}
+
+/** GET /brands/review-stats: brands below min_reviews are excluded. */
+export interface BrandReviewStats {
+  total_reviews: number;
+  brands_with_reviews: number;
+  min_reviews: number;
+  brands_meeting_threshold: number;
+  items: BrandReviewStat[];
+}
+
 // ------------------------------------------------------------------ categories
 export interface CatalogueCategory {
   category: string;
@@ -188,6 +240,8 @@ export interface CatalogueCategory {
 export interface CatalogueCategories {
   level: "primary" | "secondary";
   parent: string | null;
+  /** Set when the breakdown is limited to one brand. */
+  brand?: string | null;
   total_products: number;
   items: CatalogueCategory[];
 }

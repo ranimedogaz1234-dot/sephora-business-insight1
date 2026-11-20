@@ -112,6 +112,18 @@ text), sorting (recency, helpfulness, rating) and server-side pagination of 20 r
 on phones it switches from a table to review cards. All state lives in the URL, and values
 outside the review domain are dropped before reaching the API.
 
+**Brands & Categories** (`/brands`) compares brands and categories. Review-based sections
+(most reviewed brands, highest-rated brands, the brand landscape scatter of rating against
+review volume, average rating by Skincare subcategory) can be scoped to one Skincare
+subcategory, and rating rankings only include brands above a selectable minimum review count
+(25, 100, 500 or 1,000; default 100), so a handful of reviews never tops a ranking. Catalogue
+sections cover all nine categories: products per category with drill-down into a category's
+subcategories, and product counts by brand. Selecting any brand (from a ranking, a scatter dot,
+the directory or the focus menu) opens a **brand focus** panel: catalogue footprint, review
+figures, category mix, most reviewed products, and a subcategory comparison against all brands
+(differences are only highlighted with at least 30 brand reviews). The **brand directory**
+lists every catalogue brand with search, sortable columns and pagination.
+
 Design system: white-dominant surfaces, burgundy `#800F35` for emphasis and data marks,
 soft pink for selection highlights, Playfair Display for editorial headings and Geist for
 all figures, labels and tables. Text colours meet WCAG AA; the heatmap ramp is a single
@@ -161,7 +173,9 @@ All endpoints are `GET` under `/api/v1`. Interactive docs at `/docs` (disabled w
 | `/products/{product_id}` | catalogue + reviews | Product detail with review statistics |
 | `/brands` | catalogue + reviews | All brands, sortable and searchable |
 | `/brands/top` | reviews | Top brands by review volume |
-| `/categories/catalogue[?parent=]` | catalogue | All nine primary categories, or one category's subcategories |
+| `/brands/review-stats?min_reviews=&sort_by=` | reviews | Per-brand review statistics above a minimum review count (rankings, scatter) |
+| `/brands/detail?brand=` | catalogue + reviews | One brand by exact name |
+| `/categories/catalogue[?parent=&brand=]` | catalogue | All nine primary categories, or one category's subcategories; optionally for one brand |
 | `/categories/reviews` | reviews | Skincare subcategory breakdown |
 | `/prices/distribution` | catalogue | Price histogram with overflow bin and statistics |
 
