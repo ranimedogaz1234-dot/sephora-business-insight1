@@ -7,7 +7,7 @@ const LABELS: Record<Scope, { text: string; title: string }> = {
   },
   catalogue: {
     text: "Catalogue · all products",
-    title: "Computed from product_info.csv (all nine categories). Not affected by review filters.",
+    title: "Computed from product_info.csv (every catalogue category). Not affected by review filters.",
   },
 };
 

@@ -78,7 +78,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--rebuild", action="store_true")
     parser.add_argument("--repeat", type=int, default=5)
     args = parser.parse_args(argv)
-    s = get_settings()
+    # Local measurement tool: hundreds of in-process requests, so no rate limiting.
+    s = get_settings().model_copy(update={"rate_limit_per_minute": 0})
 
     if args.rebuild:
         t = time.perf_counter()

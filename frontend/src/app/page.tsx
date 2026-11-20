@@ -10,7 +10,7 @@ import {
   type FilterDomain,
   type RawSearchParams,
 } from "@/lib/filters";
-import { formatDate, formatInteger, formatPercent, formatRating, plural } from "@/lib/format";
+import { formatCompact, formatDate, formatInteger, formatPercent, formatRating, plural } from "@/lib/format";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PendingFrame } from "@/components/layout/NavigationTransition";
 import { FilterBar } from "@/components/filters/FilterBar";
@@ -80,7 +80,11 @@ export default async function ExecutiveOverview({ searchParams }: { searchParams
       <PageHeader
         eyebrow="Executive overview"
         title="Business performance at a glance"
-        description="Catalogue composition across all nine categories, and what 1.09M Skincare reviews say about ratings, products and brands."
+        description={`Catalogue composition across all ${options.catalogue.primary_categories.length} categories, and what ${formatCompact(
+          kpis.ok
+            ? kpis.value.data_quality.review_records_total
+            : options.reviews.years.reduce((sum, y) => sum + y.review_count, 0),
+        )} ${options.reviews.scope_category} reviews say about ratings, products and brands.`}
         meta={
           <span>
             Reviews {formatDate(options.reviews.date_min)} – {formatDate(options.reviews.date_max)}
@@ -219,7 +223,7 @@ export default async function ExecutiveOverview({ searchParams }: { searchParams
             <div className="grid gap-6 lg:grid-cols-2">
               <ChartCard
                 title="Product catalogue by category"
-                subtitle="Products per primary category, all nine categories"
+                subtitle={`Products per primary category, all ${options.catalogue.primary_categories.length} categories`}
                 scope="catalogue"
               >
                 {!catalogueCats.ok ? (

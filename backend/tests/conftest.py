@@ -24,7 +24,9 @@ def make_client(data_dir: Path, cache_dir: Path | None, **overrides) -> TestClie
         data_dir=data_dir,
         cache_dir=cache_dir or Path("unused"),
         cache_enabled=cache_dir is not None,
-        **{"environment": "test", **overrides},
+        # Rate limiting is off unless a test sets it: suites like the oracle checks send
+        # hundreds of requests in a burst, and the limiter has its own tests.
+        **{"environment": "test", "rate_limit_per_minute": 0, **overrides},
     )
     app = create_app(settings)
     app.dependency_overrides[get_settings] = lambda: settings

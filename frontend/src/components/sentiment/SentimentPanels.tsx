@@ -53,12 +53,12 @@ export function CoverageStrip({ data }: { data: SentimentSummary }) {
   const run = data.last_run;
   return (
     <section aria-label="Classification coverage" className="rounded-xl border border-line bg-white p-5">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div className="min-w-0 flex-1">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="min-w-0 lg:flex-1">
           <p className="text-xs font-medium text-ink-2">Coverage in this selection</p>
           <p className="mt-1 text-[28px] font-semibold leading-none tracking-tight text-burgundy">
             {formatPercent(data.coverage)}
-            <span className="ml-2 text-sm font-medium text-ink-3">
+            <span className="ml-2 inline-block text-sm font-medium text-ink-3">
               {formatInteger(data.classified)} of {formatInteger(data.total_reviews)} reviews
             </span>
           </p>
