@@ -202,3 +202,18 @@ class PriceDistributionQuery(QueryModel):
             raise ValueError("too many bins: increase bin_width or lower max_price")
         object.__setattr__(self, "primary_category", _normalise(self.primary_category))
         return self
+
+
+class ProductCompareQuery(QueryModel):
+    """Two to four distinct products, kept in the order given."""
+
+    product_id: list[ProductId] = Field(..., min_length=2, max_length=4)
+    granularity: Literal["quarter", "year"] = "year"
+
+    @model_validator(mode="after")
+    def _check(self) -> Self:
+        unique = list(dict.fromkeys(self.product_id))
+        if len(unique) < 2:
+            raise ValueError("compare at least two different products")
+        object.__setattr__(self, "product_id", unique)
+        return self

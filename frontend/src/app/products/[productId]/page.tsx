@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 import { connection } from "next/server";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, GitCompareArrows } from "lucide-react";
 import { ApiError, api } from "@/lib/api/client";
 import type { ProductDetail } from "@/lib/api/types";
 import { aggregateTrend } from "@/lib/aggregate";
@@ -159,13 +159,22 @@ export default async function ProductPage({ params, searchParams }: Props) {
         title={product.product_name}
         description={path.join(" › ")}
         meta={
-          <Link
-            href="/products"
-            className="inline-flex items-center gap-1.5 rounded-md text-sm font-medium text-burgundy hover:underline"
-          >
-            <ArrowLeft aria-hidden className="h-4 w-4" strokeWidth={2} />
-            All products
-          </Link>
+          <span className="flex flex-wrap items-center gap-x-4 gap-y-1">
+            <Link
+              href="/products"
+              className="inline-flex items-center gap-1.5 rounded-md text-sm font-medium text-burgundy hover:underline"
+            >
+              <ArrowLeft aria-hidden className="h-4 w-4" strokeWidth={2} />
+              All products
+            </Link>
+            <Link
+              href={`/compare?ids=${encodeURIComponent(product.product_id)}`}
+              className="inline-flex items-center gap-1.5 rounded-md text-sm font-medium text-burgundy hover:underline"
+            >
+              <GitCompareArrows aria-hidden className="h-4 w-4" strokeWidth={2} />
+              Compare
+            </Link>
+          </span>
         }
       />
 

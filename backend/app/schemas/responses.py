@@ -219,6 +219,26 @@ class ProductDetail(ProductItem):
     review_stats: ProductReviewStats
 
 
+class ComparedProduct(ProductItem):
+    """Catalogue facts plus review-record statistics for one compared product."""
+
+    size: str | None
+    review_stats: ProductReviewStats
+
+
+class ComparisonPeriod(BaseModel):
+    period: str
+    period_start: date
+    review_counts: list[int] = Field(description="One value per compared product, in request order")
+    average_ratings: list[float | None]
+
+
+class ProductComparison(BaseModel):
+    granularity: Literal["quarter", "year"]
+    items: list[ComparedProduct]
+    periods: list[ComparisonPeriod]
+
+
 class PopularityPoint(BaseModel):
     product_id: str
     product_name: str

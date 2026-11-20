@@ -53,10 +53,10 @@ export const NAV_ITEMS: NavItem[] = [
   },
   {
     label: "Product Comparison",
-    href: null,
+    href: "/compare",
     description: "Side-by-side product comparison.",
     icon: GitCompareArrows,
-    status: "planned",
+    status: "available",
   },
   {
     label: "Data Explorer",

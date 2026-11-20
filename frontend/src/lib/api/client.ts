@@ -12,6 +12,7 @@ import type {
   OverviewResponse,
   Page,
   PriceDistribution,
+  ProductComparison,
   ProductDetail,
   ProductItem,
   ProductListParams,
@@ -114,6 +115,8 @@ export const api = {
   products: (q: ProductListParams = {}) => apiGet<Page<ProductItem>>("/products", { ...q }),
   product: (productId: string) =>
     apiGet<ProductDetail>(`/products/${encodeURIComponent(productId)}`),
+  compareProducts: (productIds: string[], granularity: "quarter" | "year" = "year") =>
+    apiGet<ProductComparison>("/products/compare", { product_id: productIds, granularity }),
   reviewerProfiles: (f: F = {}) => apiGet<ReviewerProfiles>("/reviews/profiles", { ...f }),
   reviews: (q: ReviewListParams = {}) => apiGet<Page<ReviewItem>>("/reviews", { ...q }),
   reviewCategories: (f: F = {}) => apiGet<ReviewCategories>("/categories/reviews", { ...f }),

@@ -472,3 +472,25 @@ export interface ReviewerProfiles {
   total_reviews: number;
   dimensions: ProfileDimension[];
 }
+
+// ------------------------------------------------------------------ product comparison
+/** One compared product: catalogue facts plus review-record statistics. */
+export interface ComparedProduct extends ProductItem {
+  size: string | null;
+  review_stats: ProductReviewStats;
+}
+
+export interface ComparisonPeriod {
+  period: string;
+  period_start: string;
+  /** One value per compared product, in request order. */
+  review_counts: number[];
+  average_ratings: (number | null)[];
+}
+
+/** GET /products/compare */
+export interface ProductComparison {
+  granularity: "quarter" | "year";
+  items: ComparedProduct[];
+  periods: ComparisonPeriod[];
+}

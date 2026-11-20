@@ -58,7 +58,7 @@ def rating_distribution(ds: Dataset, f: ReviewFilters) -> RatingDistribution:
     return ds.memo(("rating_distribution", f.review_filters_key()), compute)
 
 
-def _period_keys(year: np.ndarray, month: np.ndarray, granularity: str) -> np.ndarray:
+def period_keys(year: np.ndarray, month: np.ndarray, granularity: str) -> np.ndarray:
     if granularity == "year":
         return year
     if granularity == "quarter":
@@ -66,7 +66,7 @@ def _period_keys(year: np.ndarray, month: np.ndarray, granularity: str) -> np.nd
     return year * 12 + (month - 1)
 
 
-def _period_label(key: int, granularity: str) -> tuple[str, date]:
+def period_label(key: int, granularity: str) -> tuple[str, date]:
     if granularity == "year":
         return str(key), date(key, 1, 1)
     if granularity == "quarter":
@@ -83,7 +83,7 @@ def review_trend(ds: Dataset, q: TrendQuery) -> ReviewTrend:
         r = filtered_reviews(ds, q)
         if r.empty:
             return ReviewTrend(granularity=q.granularity, total=0, points=[])
-        keys = _period_keys(
+        keys = period_keys(
             r["year"].to_numpy(dtype=np.int64), r["month"].to_numpy(dtype=np.int64), q.granularity
         )
         ratings = r["rating"].to_numpy(dtype=np.int64)
@@ -95,7 +95,7 @@ def review_trend(ds: Dataset, q: TrendQuery) -> ReviewTrend:
         fives = np.bincount(offs, weights=(ratings == 5), minlength=size)
         points = []
         for i in range(size):
-            label, start = _period_label(base + i, q.granularity)
+            label, start = period_label(base + i, q.granularity)
             c = int(counts[i])
             points.append(
                 TrendPoint(

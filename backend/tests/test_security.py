@@ -13,6 +13,7 @@ DATA_ENDPOINTS = [
     "/reviews/activity-heatmap",
     "/reviews/profiles",
     "/brands/review-stats",
+    "/products/compare?product_id=P1001&product_id=P1003",
     "/brands/detail?brand=Alpha%20Labs",
     "/reviews?page_size=100",
     "/reviews/r_c78c45e2db818b2b",
