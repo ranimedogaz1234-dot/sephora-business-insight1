@@ -494,3 +494,50 @@ export interface ProductComparison {
   items: ComparedProduct[];
   periods: ComparisonPeriod[];
 }
+
+// ------------------------------------------------------------------ dataset profile
+export type ColumnKind = "identifier" | "text" | "category" | "number" | "boolean" | "date";
+
+/** One source CSV column. Statistics are null when withheld or not applicable. */
+export interface ColumnProfile {
+  name: string;
+  kind: ColumnKind;
+  description: string;
+  exposed: boolean;
+  non_null: number | null;
+  missing: number | null;
+  missing_share: number | null;
+  distinct: number | null;
+  min: number | null;
+  max: number | null;
+  mean: number | null;
+  median: number | null;
+  date_min: string | null;
+  date_max: string | null;
+  median_length: number | null;
+}
+
+export type DatasetTable = "products" | "reviews";
+
+export interface TableProfile {
+  name: DatasetTable;
+  label: string;
+  source: string;
+  description: string;
+  row_count: number;
+  columns: ColumnProfile[];
+  dropped_columns: Record<string, string>;
+}
+
+export interface QualityCheck {
+  name: string;
+  status: "pass" | "warn" | "info";
+  value: string;
+  detail: string;
+}
+
+/** GET /dataset/profile */
+export interface DatasetProfile {
+  tables: TableProfile[];
+  checks: QualityCheck[];
+}

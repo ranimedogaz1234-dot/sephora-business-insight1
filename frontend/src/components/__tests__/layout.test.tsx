@@ -13,7 +13,7 @@ describe("Sidebar", () => {
     render(<Sidebar status={online} />);
     const nav = screen.getByRole("navigation", { name: "Main" });
     const links = within(nav).getAllByRole("link");
-    expect(links.map((l) => l.getAttribute("href"))).toEqual(["/", "/products", "/reviews", "/brands", "/compare"]);
+    expect(links.map((l) => l.getAttribute("href"))).toEqual(["/", "/products", "/reviews", "/brands", "/compare", "/explorer"]);
     expect(links[0]).toHaveAttribute("aria-current", "page");
     expect(links[0]).toHaveTextContent("Executive Overview");
     expect(links[1]).toHaveTextContent("Product Analytics");
@@ -38,8 +38,8 @@ describe("Sidebar", () => {
     expect(plannedLabels).not.toContain("Review Analytics");
     expect(plannedLabels).not.toContain("Brands & Categories");
     expect(plannedLabels).not.toContain("Product Comparison");
+    expect(plannedLabels).not.toContain("Data Explorer");
     for (const label of [
-      "Data Explorer",
       "AI Sentiment Analysis",
     ]) {
       expect(plannedLabels).toContain(label);

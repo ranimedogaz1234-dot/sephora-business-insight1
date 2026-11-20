@@ -6,6 +6,7 @@ import type {
   BrandReviewSortField,
   BrandReviewStats,
   CatalogueCategories,
+  DatasetProfile,
   ExecutiveKpis,
   FilterOptions,
   HealthResponse,
@@ -115,6 +116,7 @@ export const api = {
   products: (q: ProductListParams = {}) => apiGet<Page<ProductItem>>("/products", { ...q }),
   product: (productId: string) =>
     apiGet<ProductDetail>(`/products/${encodeURIComponent(productId)}`),
+  datasetProfile: () => apiGet<DatasetProfile>("/dataset/profile"),
   compareProducts: (productIds: string[], granularity: "quarter" | "year" = "year") =>
     apiGet<ProductComparison>("/products/compare", { product_id: productIds, granularity }),
   reviewerProfiles: (f: F = {}) => apiGet<ReviewerProfiles>("/reviews/profiles", { ...f }),
