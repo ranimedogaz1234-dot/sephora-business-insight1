@@ -6,7 +6,9 @@ from fastapi import APIRouter, HTTPException, Path, Query, status
 
 from app.api.deps import DatasetDep
 from app.schemas.queries import (
+    BrandDetailQuery,
     BrandListQuery,
+    BrandReviewStatsQuery,
     CatalogueCategoryQuery,
     PriceDistributionQuery,
     ProductListQuery,
@@ -21,6 +23,7 @@ from app.schemas.queries import (
 from app.schemas.responses import (
     ActivityHeatmap,
     BrandItem,
+    BrandReviewStats,
     CatalogueCategories,
     ExecutiveKpis,
     Page,
@@ -144,6 +147,21 @@ def list_brands(ds: DatasetDep, q: Annotated[BrandListQuery, Query()]):
     return brands.list_brands(ds, q)
 
 
+@brand_router.get("/detail", response_model=BrandItem)
+def brand_detail(ds: DatasetDep, q: Annotated[BrandDetailQuery, Query()]):
+    """One brand by exact name (query parameter, so names with any characters are safe)."""
+    item = brands.get_brand(ds, q.brand)
+    if item is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Brand not found")
+    return item
+
+
+@brand_router.get("/review-stats", response_model=BrandReviewStats)
+def brand_review_stats(ds: DatasetDep, q: Annotated[BrandReviewStatsQuery, Query()]):
+    """Per-brand review statistics with a minimum review count and a whitelisted sort."""
+    return brands.brand_review_stats(ds, q)
+
+
 @brand_router.get("/top", response_model=TopBrands)
 def top_brands(ds: DatasetDep, q: Annotated[TopBrandsQuery, Query()]):
     """Top brands by review-record volume."""
@@ -158,6 +176,8 @@ def catalogue_categories(ds: DatasetDep, q: Annotated[CatalogueCategoryQuery, Qu
         return categories.catalogue_categories(ds, q)
     except categories.UnknownCategoryError as exc:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Unknown primary category") from exc
+    except categories.UnknownBrandError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Unknown brand") from exc
 
 
 @category_router.get("/reviews", response_model=ReviewCategories)

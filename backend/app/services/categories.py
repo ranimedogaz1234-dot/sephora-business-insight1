@@ -26,6 +26,10 @@ class UnknownCategoryError(LookupError):
     pass
 
 
+class UnknownBrandError(LookupError):
+    pass
+
+
 def primary_categories(ds: Dataset) -> list[str]:
     return sorted(ds.products["primary_category"].dropna().astype(str).unique())
 
@@ -33,9 +37,13 @@ def primary_categories(ds: Dataset) -> list[str]:
 def catalogue_categories(ds: Dataset, q: CatalogueCategoryQuery) -> CatalogueCategories:
     if q.parent is not None and q.parent not in primary_categories(ds):
         raise UnknownCategoryError(q.parent)
+    if q.brand is not None and not (ds.products["brand_name"] == q.brand).any():
+        raise UnknownBrandError(q.brand)
 
     def compute() -> CatalogueCategories:
         p = ds.products
+        if q.brand is not None:
+            p = p[(p["brand_name"] == q.brand).to_numpy()]
         if q.parent is None:
             level, key = "primary", p["primary_category"].astype(str)
         else:
@@ -59,6 +67,7 @@ def catalogue_categories(ds: Dataset, q: CatalogueCategoryQuery) -> CatalogueCat
         return CatalogueCategories(
             level=level,
             parent=q.parent,
+            brand=q.brand,
             total_products=total,
             items=[
                 CatalogueCategory(

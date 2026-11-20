@@ -46,10 +46,10 @@ export const NAV_ITEMS: NavItem[] = [
   },
   {
     label: "Brands & Categories",
-    href: null,
+    href: "/brands",
     description: "Brand and category performance.",
     icon: Tags,
-    status: "planned",
+    status: "available",
   },
   {
     label: "Product Comparison",

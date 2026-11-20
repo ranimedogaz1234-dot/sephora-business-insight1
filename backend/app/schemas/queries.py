@@ -93,6 +93,24 @@ class TopBrandsQuery(ReviewFilters):
     limit: int = Field(10, ge=1, le=50)
 
 
+BrandReviewSortField = Literal[
+    "review_count", "average_rating", "five_star_share", "recommendation_rate"
+]
+
+
+class BrandReviewStatsQuery(ReviewFilters):
+    """Per-brand review statistics; ``min_reviews`` keeps small samples out of rate rankings."""
+
+    min_reviews: int = Field(1, ge=1, le=1_000_000)
+    sort_by: BrandReviewSortField = "review_count"
+    order: Order = "desc"
+    limit: int = Field(50, ge=1, le=500)
+
+
+class BrandDetailQuery(QueryModel):
+    brand: Text120
+
+
 ReviewSortField = Literal[
     "submission_time",
     "rating",
@@ -170,6 +188,7 @@ class CatalogueCategoryQuery(QueryModel):
     parent: Text120 | None = Field(
         None, description="Primary category to drill into (returns its secondary categories)"
     )
+    brand: Text120 | None = Field(None, description="Limit the breakdown to one catalogue brand")
 
 
 class PriceDistributionQuery(QueryModel):
