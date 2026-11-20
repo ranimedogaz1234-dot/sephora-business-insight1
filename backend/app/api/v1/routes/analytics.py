@@ -26,6 +26,7 @@ from app.schemas.responses import (
     BrandItem,
     BrandReviewStats,
     CatalogueCategories,
+    DatasetProfile,
     ExecutiveKpis,
     Page,
     PriceDistribution,
@@ -43,7 +44,7 @@ from app.schemas.responses import (
     YearCount,
     YearRanking,
 )
-from app.services import brands, categories, kpis, prices, products, reviews
+from app.services import brands, categories, kpis, prices, products, profile, reviews
 
 ReviewIdPath = Annotated[str, Path(pattern=r"^r_[0-9a-f]{16}$")]
 ProductIdPath = Annotated[str, Path(pattern=r"^P\d{1,12}$")]
@@ -54,6 +55,7 @@ product_router = APIRouter(prefix="/products", tags=["products"])
 brand_router = APIRouter(prefix="/brands", tags=["brands"])
 category_router = APIRouter(prefix="/categories", tags=["categories"])
 price_router = APIRouter(prefix="/prices", tags=["prices"])
+dataset_router = APIRouter(prefix="/dataset", tags=["dataset"])
 
 
 # ----------------------------------------------------------------------------- KPIs
@@ -206,4 +208,22 @@ def price_distribution(ds: DatasetDep, q: Annotated[PriceDistributionQuery, Quer
     return prices.price_distribution(ds, q)
 
 
-routers = [kpi_router, review_router, product_router, brand_router, category_router, price_router]
+# ----------------------------------------------------------------------------- dataset
+@dataset_router.get("/profile", response_model=DatasetProfile)
+def dataset_profile(ds: DatasetDep):
+    """Column dictionary, missing-value statistics and data-quality checks for both tables.
+
+    Aggregates only: no row values are returned, and the reviewer identifier is withheld.
+    """
+    return profile.dataset_profile(ds)
+
+
+routers = [
+    kpi_router,
+    review_router,
+    product_router,
+    brand_router,
+    category_router,
+    price_router,
+    dataset_router,
+]
