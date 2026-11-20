@@ -18,6 +18,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 from app.sentiment import LABELS
@@ -58,6 +59,18 @@ CREATE TABLE IF NOT EXISTS insights (
 """
 
 
+def _case(column: str, values: tuple[str, ...]) -> str:
+    """SQL mapping a constrained text column to its single-digit index (constants only)."""
+    whens = " ".join(f"WHEN '{v}' THEN '{i}'" for i, v in enumerate(values))
+    return f"(CASE {column} {whens} END)"
+
+
+def _digits(text: str | None) -> np.ndarray:
+    if not text:
+        return np.array([], dtype=np.int8)
+    return (np.frombuffer(text.encode("ascii"), dtype=np.uint8) - ord("0")).astype(np.int8)
+
+
 def now_iso() -> str:
     return datetime.now(UTC).replace(microsecond=0).isoformat()
 
@@ -94,12 +107,12 @@ class SentimentStore:
     def exists(self) -> bool:
         return self.path.exists()
 
-    def version(self) -> tuple[float, int] | None:
-        """Changes whenever the file changes (used to invalidate in-memory caches)."""
+    def version(self) -> tuple[int, int] | None:
+        """Changes whenever the file changes (used to invalidate cached results)."""
         if not self.path.exists():
             return None
         st = self.path.stat()
-        return (st.st_mtime, st.st_size)
+        return (st.st_mtime_ns, st.st_size)
 
     # ----------------------------------------------------------------- labels
     def save_labels(self, records: Iterable[LabelRecord]) -> int:
@@ -130,6 +143,42 @@ class SentimentStore:
             return pd.read_sql_query(
                 "SELECT review_id, label, source, model, prompt_version FROM labels", conn
             )
+
+    def label_rows(self, fast: bool | None = None):
+        """(review_ids, label_codes, source_codes, models, prompt_versions).
+
+        Codes index LABELS / SOURCES (int8). Reading a million rows as Python tuples is slow,
+        so on SQLite >= 3.44 the codes come back as one ordered digit string per column
+        (``group_concat(... ORDER BY rowid)``); older SQLite uses one ordered tuple query.
+        Both paths return identical results in rowid order."""
+        if not self.exists:
+            empty = np.array([], dtype=np.int8)
+            return [], empty, empty, [], []
+        if fast is None:
+            fast = sqlite3.sqlite_version_info >= (3, 44, 0)
+        label_case = _case("label", LABELS)
+        source_case = _case("source", SOURCES)
+        with self.connect() as conn:
+            conn.executescript(SCHEMA)
+            if fast:
+                ids = [r[0] for r in conn.execute("SELECT review_id FROM labels ORDER BY rowid")]
+                lab, src = conn.execute(
+                    f"SELECT group_concat({label_case}, '' ORDER BY rowid), "  # noqa: S608
+                    f"group_concat({source_case}, '' ORDER BY rowid) FROM labels"
+                ).fetchone()
+                labels = _digits(lab)
+                sources = _digits(src)
+            else:
+                rows = conn.execute(
+                    f"SELECT review_id, {label_case}, {source_case} FROM labels ORDER BY rowid"  # noqa: S608
+                ).fetchall()
+                ids = [r[0] for r in rows]
+                labels = np.fromiter((int(r[1]) for r in rows), np.int8, len(rows))
+                sources = np.fromiter((int(r[2]) for r in rows), np.int8, len(rows))
+            meta = conn.execute("SELECT DISTINCT model, prompt_version FROM labels").fetchall()
+        models = sorted({m for m, _ in meta if m})
+        versions = sorted({v for _, v in meta if v})
+        return ids, labels, sources, models, versions
 
     # ----------------------------------------------------------------- runs
     def start_run(

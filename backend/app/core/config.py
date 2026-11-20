@@ -34,6 +34,14 @@ class Settings(BaseSettings):
     cors_origins: list[str] = ["http://localhost:3001", "http://127.0.0.1:3001"]
     api_prefix: str = "/api/v1"
 
+    # --- Rate limiting (per client; 0 disables). See app/core/ratelimit.py.
+    rate_limit_per_minute: int = Field(300, ge=0)
+    rate_limit_burst: int = Field(100, ge=1)
+    # Client addresses never limited, e.g. the Next.js server that renders the pages.
+    rate_limit_exempt: list[str] = []
+    # Use the first X-Forwarded-For address as the client. Only behind a trusted proxy.
+    trust_proxy_headers: bool = False
+
     # --- AI sentiment (classification runs only from the CLI; the API only reads results)
     # Persistent label store; defaults to <cache_dir>/sentiment.sqlite3 (gitignored).
     sentiment_db: Path | None = None

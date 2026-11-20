@@ -42,7 +42,31 @@ ENDPOINTS = [
     "/reviews?page_size=50",
     "/reviews?q=holy%20grail&sort_by=helpfulness&page_size=50",
     "/reviews?subcategory=Sunscreen&rating=1&page_size=50",
+    "/reviews/profiles",
+    "/brands/review-stats?min_reviews=100&sort_by=average_rating&limit=10",
+    "/brands/review-stats?min_reviews=100&limit=500",
+    "/dataset/profile",
+    "/sentiment/summary",
+    "/sentiment/breakdown?by=brand&min_classified=50",
+    "/sentiment/trends?granularity=month",
+    "/sentiment/insights",
 ]
+
+
+def dataset_endpoints(ds) -> list[str]:
+    """Endpoints whose parameters depend on the loaded dataset (most reviewed products/brand)."""
+    from urllib.parse import quote
+
+    top = ds.reviews["product_id"].value_counts().index[:2].astype(str)
+    brand = str(ds.reviews["brand_name"].value_counts().index[0])
+    return [
+        f"/products/compare?product_id={top[0]}&product_id={top[1]}",
+        f"/products/compare?product_id={top[0]}&product_id={top[1]}&granularity=quarter",
+        f"/brands/detail?brand={quote(brand)}",
+        f"/categories/catalogue?brand={quote(brand)}",
+        f"/kpis?brand={quote(brand)}",
+        f"/sentiment/breakdown?by=product&min_classified=1&product_id={top[0]}",
+    ]
 
 
 def rss_mb() -> float:
@@ -74,7 +98,7 @@ def main(argv: list[str] | None = None) -> int:
 
     client = TestClient(create_app(s))
     print(f"\n{'endpoint':66} {'first':>8} {'repeat p50':>11}")
-    for url in ENDPOINTS:
+    for url in ENDPOINTS + dataset_endpoints(ds):
         t = time.perf_counter()
         res = client.get(f"{s.api_prefix}{url}")
         first = (time.perf_counter() - t) * 1000

@@ -6,7 +6,7 @@ set -euo pipefail
 files=$(git ls-files)
 status=0
 
-csv=$(echo "$files" | grep -iE '\.(csv|parquet|feather|pkl|zip|sqlite|sqlite3|db)$' | grep -v '^backend/tests/fixtures/' || true)
+csv=$(echo "$files" | grep -iE '\.(csv|parquet|feather|pkl|zip|sqlite|sqlite3|db|npz)$' | grep -v '^backend/tests/fixtures/' || true)
 if [ -n "$csv" ]; then
   echo "ERROR: data files must not be committed:"; echo "$csv"; status=1
 fi

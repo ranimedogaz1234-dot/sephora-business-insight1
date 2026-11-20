@@ -138,11 +138,24 @@ DROPPED_REVIEW_COLUMNS = {
 
 
 def _missing(series: pd.Series) -> pd.Series:
-    """Missing values, counting the literal 'nan' labels categorical columns carry for NaN."""
-    miss = series.isna()
+    """Missing values, counting the literal 'nan' labels categorical columns carry for NaN.
+
+    Categorical columns are checked through their small category list and integer codes,
+    instead of converting a million values to strings."""
     if isinstance(series.dtype, pd.CategoricalDtype):
-        miss = miss | (series.astype("string") == "nan").fillna(True).to_numpy()
+        cats = series.cat.categories.astype(str)
+        nan_codes = np.flatnonzero(cats == "nan")
+        codes = series.cat.codes.to_numpy()
+        miss = (codes < 0) | np.isin(codes, nan_codes)
+    else:
+        miss = series.isna().to_numpy()
     return pd.Series(np.asarray(miss, dtype=bool), index=series.index)
+
+
+def _distinct(present: pd.Series) -> int:
+    if isinstance(present.dtype, pd.CategoricalDtype):
+        return int(len(np.unique(present.cat.codes.to_numpy())))
+    return int(present.astype("string").nunique())
 
 
 def _column(spec: ColumnSpec, frame: pd.DataFrame, n: int) -> ColumnProfile:
@@ -161,7 +174,7 @@ def _column(spec: ColumnSpec, frame: pd.DataFrame, n: int) -> ColumnProfile:
         missing_share=r4(missing / n) if n else 0.0,
     )
     if spec.kind in ("category", "identifier", "boolean"):
-        out.distinct = int(present.astype("string").nunique())
+        out.distinct = _distinct(present)
     elif spec.kind == "number" and len(present):
         values = present.astype("float64")
         out.min, out.max = r4(values.min()), r4(values.max())

@@ -200,6 +200,43 @@ unclassified - nothing is guessed. After a run, estimates use the measured outpu
 `seed-synthetic` writes demo labels from star ratings for the synthetic fixtures only (it refuses
 on larger datasets); they are marked as synthetic everywhere.
 
+### Security and performance
+
+- **API hardening:** read-only `GET` API; every query model rejects unknown parameters and bounds
+  every value; restrictive CORS (`SBI_CORS_ORIGINS`); security headers on every API response,
+  including `Content-Security-Policy: default-src 'none'`; interactive docs disabled in
+  production; reviewer identifiers never returned; the Claude API key stays in the backend.
+- **Rate limiting:** a per-client token bucket (`SBI_RATE_LIMIT_PER_MINUTE`, default 300, burst
+  100). Text search and the dataset profile cost 5 tokens. Over the limit the API answers `429`
+  with `Retry-After`. Because pages are server-rendered, list the Next.js server's address in
+  `SBI_RATE_LIMIT_EXEMPT` in production; set `SBI_TRUST_PROXY_HEADERS` only behind a trusted proxy.
+- **Frontend headers:** Content-Security-Policy (no third-party origins; the browser never calls
+  the API directly), `X-Frame-Options: DENY`, `nosniff`, a strict referrer and permissions policy,
+  and no `X-Powered-By`.
+- **Repository safety:** `scripts/check-tracked-files.sh` (run in CI) blocks data files (CSV,
+  Parquet, SQLite, NPZ…), `.env` files, keys and secret-looking strings.
+
+**Benchmarking at full scale without the private data:** `scripts/make_synthetic_dataset.py`
+writes a random dataset with the real CSV schema (no Sephora data) outside the repository:
+
+```bash
+cd backend
+python -m scripts.make_synthetic_dataset /tmp/sbi-synthetic --reviews 1100000
+SBI_DATA_DIR=/tmp/sbi-synthetic SBI_CACHE_DIR=/tmp/sbi-synthetic-cache python -m scripts.benchmark --rebuild
+```
+
+On 1.1M synthetic reviews (4-core cloud container), the dataset opens from the Parquet cache in
+0.15 s and most endpoints answer in under 10 ms once warm. Measured hot spots and their fixes:
+
+| Endpoint | Before | After |
+| --- | --- | --- |
+| `/sentiment/summary` first call after a run | 3,300 ms | 1,624 ms (27 ms after a restart) |
+| `/sentiment/breakdown` (every call) | 335 ms | 26 ms first, 6 ms cached |
+| `/sentiment/insights` (every call) | 674 ms | 69 ms first, 6 ms cached |
+| `/dataset/profile` first call | 2,829 ms | 907 ms |
+
+These are synthetic-data timings; real-data timings depend on review text length and hardware.
+
 ## API (v1)
 
 All endpoints are `GET` under `/api/v1`. Interactive docs at `/docs` (disabled when
