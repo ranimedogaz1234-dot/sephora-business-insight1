@@ -15,6 +15,7 @@ import type {
   ReviewListParams,
   RankedProduct,
   RatingDistribution,
+  ReviewerProfiles,
   RatingPopularity,
   ReviewCategories,
   ReviewFilterParams,
@@ -95,6 +96,7 @@ export const api = {
   products: (q: ProductListParams = {}) => apiGet<Page<ProductItem>>("/products", { ...q }),
   product: (productId: string) =>
     apiGet<ProductDetail>(`/products/${encodeURIComponent(productId)}`),
+  reviewerProfiles: (f: F = {}) => apiGet<ReviewerProfiles>("/reviews/profiles", { ...f }),
   reviews: (q: ReviewListParams = {}) => apiGet<Page<ReviewItem>>("/reviews", { ...q }),
   reviewCategories: (f: F = {}) => apiGet<ReviewCategories>("/categories/reviews", { ...f }),
   priceDistribution: (binWidth = 10, maxPrice = 300) =>

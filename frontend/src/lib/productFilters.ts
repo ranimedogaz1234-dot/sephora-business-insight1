@@ -7,11 +7,11 @@
  */
 import type { ProductListParams, ProductSortField, SortOrder } from "@/lib/api/types";
 import type { RawSearchParams } from "@/lib/filters";
+import { normaliseSearch } from "@/lib/search";
+
+export { MAX_SEARCH_LENGTH, MIN_SEARCH_LENGTH, normaliseSearch } from "@/lib/search";
 
 export const PRODUCT_PAGE_SIZE = 25;
-/** The API rejects shorter search strings; shorter input is treated as "no search". */
-export const MIN_SEARCH_LENGTH = 2;
-export const MAX_SEARCH_LENGTH = 100;
 export const MIN_RATING_OPTIONS = [4.5, 4, 3.5, 3] as const;
 
 export const PRODUCT_SORT_FIELDS: readonly ProductSortField[] = [
@@ -70,11 +70,6 @@ function price(value: string | undefined, max: number): number | undefined {
   if (!value || !/^\d{1,6}(\.\d{1,2})?$/.test(value)) return undefined;
   const n = Number(value);
   return n >= 0 && n <= Math.max(max, 0) ? n : undefined;
-}
-
-export function normaliseSearch(raw: string | undefined): string | undefined {
-  const q = raw?.trim().slice(0, MAX_SEARCH_LENGTH);
-  return q && q.length >= MIN_SEARCH_LENGTH ? q : undefined;
 }
 
 export function parseProductFilters(sp: RawSearchParams, domain: ProductDomain): ProductFilters {

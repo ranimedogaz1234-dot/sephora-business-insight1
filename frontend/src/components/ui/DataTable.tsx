@@ -16,7 +16,7 @@ interface DataTableProps {
 /** Accessible table view — the WCAG-clean twin of every chart. */
 export function DataTable({ caption, columns, rows, maxHeight = 320 }: DataTableProps) {
   return (
-    <div className="overflow-auto rounded-md border border-line" style={{ maxHeight }} tabIndex={0}>
+    <div className="relative overflow-auto rounded-md border border-line" style={{ maxHeight }} tabIndex={0}>
       <table className="w-full border-collapse text-sm">
         <caption className="sr-only">{caption}</caption>
         <thead className="sticky top-0 bg-light-gray">

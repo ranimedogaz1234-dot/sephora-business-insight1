@@ -100,6 +100,18 @@ share of 1–2 star ratings, price vs the catalogue category median and the most
 year; comparisons are skipped below 30 review records. Products outside Skincare state plainly
 that the review dataset does not cover them.
 
+**Review Analytics** (`/reviews`) analyses the Skincare review records. Filters for review
+date range, Skincare subcategory, brand, product, star rating and recommendation scope every
+figure on the page: review KPI cards (records, average rating, five-star share, recommend rate,
+unique reviewers, reviewed products and brands), review activity over time
+(monthly/quarterly/yearly), rating distribution, reviews by brand and by subcategory, the most
+reviewed products, and aggregate reviewer profiles (self-reported skin type, skin tone, eye and
+hair colour, with the unanswered share stated). Brand, subcategory and product rows drill down
+by narrowing the filters. The review explorer adds literal text search (debounced, title and
+text), sorting (recency, helpfulness, rating) and server-side pagination of 20 reviews per page;
+on phones it switches from a table to review cards. All state lives in the URL, and values
+outside the review domain are dropped before reaching the API.
+
 Design system: white-dominant surfaces, burgundy `#800F35` for emphasis and data marks,
 soft pink for selection highlights, Playfair Display for editorial headings and Geist for
 all figures, labels and tables. Text colours meet WCAG AA; the heatmap ramp is a single
@@ -138,6 +150,7 @@ All endpoints are `GET` under `/api/v1`. Interactive docs at `/docs` (disabled w
 | `/reviews/rating-distribution` | reviews | Count and share per star rating |
 | `/reviews/trends?granularity=month\|quarter\|year` | reviews | Volume and rating over time (gaps zero-filled) |
 | `/reviews/activity-heatmap` | reviews | Year × month review counts |
+| `/reviews/profiles` | reviews | Aggregate reviewer attributes (skin type, skin tone, eye and hair colour) |
 | `/reviews` | reviews | Review explorer: filters, text search `q`, sort, pagination |
 | `/reviews/{review_id}` | reviews | One review |
 | `/products/top-reviewed` | reviews | Most reviewed products |

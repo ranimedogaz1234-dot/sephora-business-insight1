@@ -39,10 +39,10 @@ export const NAV_ITEMS: NavItem[] = [
   },
   {
     label: "Review Analytics",
-    href: null,
+    href: "/reviews",
     description: "Review volume, ratings and reviewer profiles.",
     icon: MessagesSquare,
-    status: "planned",
+    status: "available",
   },
   {
     label: "Brands & Categories",

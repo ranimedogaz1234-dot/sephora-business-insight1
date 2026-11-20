@@ -59,7 +59,7 @@ export function ActivityHeatmapCard({ data }: { data: ActivityHeatmap }) {
         <EmptyState />
       ) : (
         <div className="relative" data-heatmap onMouseLeave={() => setHover(null)}>
-          <div className="overflow-x-auto pb-1">
+          <div className="relative overflow-x-auto pb-1">
             <table className="w-full min-w-[640px] border-separate" style={{ borderSpacing: 2 }}>
               <caption className="sr-only">Monthly review counts by year</caption>
               <thead>

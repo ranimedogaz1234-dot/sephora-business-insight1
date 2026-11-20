@@ -31,6 +31,7 @@ from app.schemas.responses import (
     RatingDistribution,
     RatingPopularity,
     ReviewCategories,
+    ReviewerProfiles,
     ReviewItem,
     ReviewTrend,
     TopBrands,
@@ -72,6 +73,15 @@ def review_trends(ds: DatasetDep, q: Annotated[TrendQuery, Query()]):
 @review_router.get("/activity-heatmap", response_model=ActivityHeatmap)
 def activity_heatmap(ds: DatasetDep, f: Annotated[ReviewFilters, Query()]):
     return reviews.activity_heatmap(ds, f)
+
+
+@review_router.get("/profiles", response_model=ReviewerProfiles)
+def reviewer_profiles(ds: DatasetDep, f: Annotated[ReviewFilters, Query()]):
+    """Review counts and ratings by self-reported skin type, skin tone, eye and hair colour.
+
+    Aggregates only: individual reviewers and their attributes are never returned.
+    """
+    return reviews.reviewer_profiles(ds, f)
 
 
 @review_router.get("", response_model=Page[ReviewItem])

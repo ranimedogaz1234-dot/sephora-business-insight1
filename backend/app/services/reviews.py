@@ -13,8 +13,11 @@ from app.schemas.responses import (
     ActivityHeatmap,
     HeatmapCell,
     Page,
+    ProfileDimension,
+    ProfileSegment,
     RatingBucket,
     RatingDistribution,
+    ReviewerProfiles,
     ReviewItem,
     ReviewTrend,
     TrendPoint,
@@ -23,11 +26,15 @@ from app.services.common import (
     RATINGS,
     contains_ci,
     filtered_reviews,
+    group_stats,
     none_if_na,
     paginate,
     r4,
+    rank,
     review_mask,
 )
+
+PROFILE_DIMENSIONS = ("skin_type", "skin_tone", "eye_color", "hair_color")
 
 
 def rating_buckets(ratings: pd.Series) -> list[RatingBucket]:
@@ -127,6 +134,44 @@ def activity_heatmap(ds: Dataset, f: ReviewFilters) -> ActivityHeatmap:
         )
 
     return ds.memo(("heatmap", f.review_filters_key()), compute)
+
+
+def reviewer_profiles(ds: Dataset, f: ReviewFilters) -> ReviewerProfiles:
+    """Review counts and ratings per self-reported reviewer attribute (aggregates only).
+
+    Shares are computed among reviews that answered the attribute; unanswered reviews
+    are reported separately as ``missing`` rather than as a segment.
+    """
+
+    def compute() -> ReviewerProfiles:
+        r = filtered_reviews(ds, f)
+        dimensions = []
+        for dim in PROFILE_DIMENSIONS:
+            stats = rank(group_stats(r, dim), dim) if len(r) else None
+            answered = int(stats["review_count"].sum()) if stats is not None else 0
+            segments = (
+                [
+                    ProfileSegment(
+                        value=str(row[dim]),
+                        review_count=int(row["review_count"]),
+                        share=r4(row["review_count"] / answered),
+                        average_rating=r4(row["average_rating"]),
+                        five_star_share=r4(row["five_star_share"]),
+                        recommendation_rate=r4(row["recommendation_rate"]),
+                    )
+                    for _, row in stats.iterrows()
+                ]
+                if stats is not None
+                else []
+            )
+            dimensions.append(
+                ProfileDimension(
+                    dimension=dim, answered=answered, missing=len(r) - answered, segments=segments
+                )
+            )
+        return ReviewerProfiles(total_reviews=len(r), dimensions=dimensions)
+
+    return ds.memo(("profiles", f.review_filters_key()), compute)
 
 
 # ----------------------------------------------------------------------------- explorer

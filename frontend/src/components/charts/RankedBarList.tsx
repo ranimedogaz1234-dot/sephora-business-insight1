@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export interface RankedItem {
   key: string;
   label: string;
@@ -7,6 +9,10 @@ export interface RankedItem {
   display: string;
   /** Optional secondary figure under the value. */
   secondary?: string;
+  /** Optional drill-down link for the label (e.g. filter the page to this brand). */
+  href?: string;
+  /** Accessible name for the drill-down link (defaults to the label). */
+  hrefLabel?: string;
 }
 
 interface RankedBarListProps {
@@ -36,7 +42,18 @@ export function RankedBarList({ items, max, ranked = true, ariaLabel }: RankedBa
             <span className="text-right text-xs tabular-nums text-ink-3">{ranked ? i + 1 : ""}</span>
             <div className="min-w-0">
               <p className="truncate text-sm text-charcoal" title={item.label}>
-                {item.label}
+                {item.href ? (
+                  <Link
+                    href={item.href}
+                    scroll={false}
+                    aria-label={item.hrefLabel}
+                    className="underline-offset-2 hover:text-burgundy hover:underline"
+                  >
+                    {item.label}
+                  </Link>
+                ) : (
+                  item.label
+                )}
                 {item.sublabel && <span className="text-ink-3"> · {item.sublabel}</span>}
               </p>
               <div className="mt-1.5 h-1.5 rounded-full bg-light-gray" aria-hidden>
