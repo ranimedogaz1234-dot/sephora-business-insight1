@@ -34,3 +34,13 @@ export const chartChrome = {
  * 3:1 contrast, so every comparison chart also has a legend, labels and a table view.
  */
 export const compareColors = ["#A8355E", "#2A78D6", "#C98500", "#1BAF7A"] as const;
+
+/**
+ * Sentiment is a polarity, so it uses a diverging encoding: two hues with a neutral grey
+ * midpoint (never a hue in the middle). Labels are always written next to the colour.
+ */
+export const sentimentColors = {
+  positive: "#2A78D6",
+  neutral: "#A39EA5",
+  negative: "#A8355E",
+} as const;

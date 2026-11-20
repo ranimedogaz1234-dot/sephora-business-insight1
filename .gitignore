@@ -11,6 +11,10 @@
 *.feather
 *.pkl
 *.zip
+# Sentiment label store and any other local databases (derived from private data)
+*.sqlite
+*.sqlite3
+*.db
 # Synthetic, safe test fixtures are the only CSVs allowed
 !backend/tests/fixtures/*.csv
 

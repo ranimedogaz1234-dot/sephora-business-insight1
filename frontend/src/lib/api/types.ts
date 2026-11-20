@@ -541,3 +541,97 @@ export interface DatasetProfile {
   tables: TableProfile[];
   checks: QualityCheck[];
 }
+
+// ------------------------------------------------------------------ AI sentiment
+export type SentimentLabel = "positive" | "neutral" | "negative";
+
+export interface LabelShare {
+  label: SentimentLabel;
+  count: number;
+  share: number;
+}
+
+export interface SentimentRun {
+  started_at: string;
+  finished_at: string | null;
+  kind: string;
+  model: string | null;
+  requested: number;
+  classified: number;
+  failed: number;
+  actual_cost: number | null;
+  status: string;
+}
+
+/** GET /sentiment/summary */
+export interface SentimentSummary {
+  status: "not_started" | "partial" | "complete";
+  total_reviews: number;
+  classified: number;
+  coverage: number;
+  dataset_classified: number;
+  dataset_reviews: number;
+  /** True when any label is a synthetic demo label (never an AI result). */
+  synthetic: boolean;
+  sources: NamedCount[];
+  models: string[];
+  prompt_versions: string[];
+  distribution: LabelShare[];
+  last_run: SentimentRun | null;
+}
+
+export type SentimentDimension = "brand" | "subcategory" | "product";
+export type SentimentSort = "classified" | "negative_share" | "positive_share" | "net";
+
+export interface SentimentGroup {
+  key: string;
+  name: string;
+  brand_name: string | null;
+  classified: number;
+  positive: number;
+  neutral: number;
+  negative: number;
+  positive_share: number;
+  neutral_share: number;
+  negative_share: number;
+  net: number;
+}
+
+export interface SentimentBreakdown {
+  by: SentimentDimension;
+  min_classified: number;
+  groups_total: number;
+  items: SentimentGroup[];
+}
+
+export interface SentimentTrendPoint {
+  period: string;
+  period_start: string;
+  classified: number;
+  positive: number;
+  neutral: number;
+  negative: number;
+}
+
+export interface SentimentTrend {
+  granularity: Granularity;
+  points: SentimentTrendPoint[];
+}
+
+export interface Evidence {
+  label: string;
+  value: string;
+}
+
+export interface SentimentInsight {
+  id: string;
+  title: string;
+  statement: string;
+  evidence: Evidence[];
+}
+
+export interface SentimentInsights {
+  min_classified: number;
+  computed: SentimentInsight[];
+  ai: { created_at: string; model: string; items: SentimentInsight[] } | null;
+}

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { connection } from "next/server";
-import { GitCompareArrows, Sparkles } from "lucide-react";
+import { GitCompareArrows } from "lucide-react";
 import { ApiError, api } from "@/lib/api/client";
 import type { Page, ProductComparison, ProductItem } from "@/lib/api/types";
 import { MAX_COMPARE, MIN_COMPARE, canCompare, parseCompareState, FINDER_PAGE_SIZE } from "@/lib/compareState";
@@ -11,6 +11,7 @@ import { PendingFrame } from "@/components/layout/NavigationTransition";
 import { CompareCards } from "@/components/compare/CompareCards";
 import { ActivityCompare, PopularityCompare, RatingMixCompare } from "@/components/compare/CompareCharts";
 import { ComparePicker, type SelectedProduct } from "@/components/compare/ComparePicker";
+import { CompareSentiment } from "@/components/compare/CompareSentiment";
 import { SectionError } from "@/components/ui/States";
 
 export const metadata: Metadata = {
@@ -81,6 +82,11 @@ export default async function ProductComparisonPage({ searchParams }: { searchPa
   ]);
   const state = { ...parsed, ids: resolved.ids };
   const comparison = resolved.comparison;
+  // Sentiment per compared product (min 1 classified); absent results stay absent.
+  const sentiment =
+    comparison?.ok && state.ids.length
+      ? await settle(api.sentimentBreakdown({ product_id: state.ids }, { by: "product", minClassified: 1, limit: 4 }))
+      : null;
   const results: Page<ProductItem> | null = finder?.ok ? finder.value : null;
 
   return (
@@ -124,23 +130,7 @@ export default async function ProductComparisonPage({ searchParams }: { searchPa
 
               <div className="grid gap-6 xl:grid-cols-2">
                 <PopularityCompare items={comparison.value.items} />
-                <section
-                  aria-labelledby="sentiment-compare-heading"
-                  className="flex flex-col rounded-xl border border-line bg-white p-5 sm:p-6"
-                >
-                  <p className="text-[10.5px] font-medium uppercase tracking-[0.14em] text-ink-3">AI sentiment</p>
-                  <h2 id="sentiment-compare-heading" className="mt-2 text-[15px] font-semibold text-charcoal">
-                    Sentiment comparison
-                  </h2>
-                  <div className="mt-5 flex flex-1 flex-col items-center justify-center gap-2 rounded-lg bg-light-gray px-6 py-10 text-center">
-                    <Sparkles aria-hidden className="h-5 w-5 text-ink-3" strokeWidth={1.75} />
-                    <p className="text-sm text-ink-2">Sentiment results are not available yet.</p>
-                    <p className="max-w-sm text-xs text-ink-3">
-                      They will appear here once AI sentiment analysis has classified these products&apos; reviews.
-                      No sentiment figures are estimated in the meantime.
-                    </p>
-                  </div>
-                </section>
+                <CompareSentiment items={comparison.value.items} data={sentiment?.ok ? sentiment.value : null} />
               </div>
             </div>
           )}

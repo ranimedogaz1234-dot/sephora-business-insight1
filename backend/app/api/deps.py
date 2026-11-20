@@ -6,6 +6,7 @@ from app.core.config import Settings, get_settings
 from app.data.dataset import Dataset
 from app.data.loader import DatasetNotFoundError
 from app.data.store import get_dataset
+from app.sentiment.store import SentimentStore
 
 SettingsDep = Annotated[Settings, Depends(get_settings)]
 
@@ -26,3 +27,10 @@ def dataset_dependency(settings: SettingsDep) -> Dataset:
 
 
 DatasetDep = Annotated[Dataset, Depends(dataset_dependency)]
+
+
+def sentiment_store_dependency(settings: SettingsDep) -> SentimentStore:
+    return SentimentStore(settings.sentiment_db_path)
+
+
+SentimentStoreDep = Annotated[SentimentStore, Depends(sentiment_store_dependency)]

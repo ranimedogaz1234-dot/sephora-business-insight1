@@ -434,3 +434,96 @@ class QualityCheck(BaseModel):
 class DatasetProfile(BaseModel):
     tables: list[TableProfile]
     checks: list[QualityCheck]
+
+
+# --------------------------------------------------------------------------- sentiment
+class LabelShare(BaseModel):
+    label: Literal["positive", "neutral", "negative"]
+    count: int
+    share: float
+
+
+class SentimentRun(BaseModel):
+    started_at: str
+    finished_at: str | None
+    kind: str
+    model: str | None
+    requested: int
+    classified: int
+    failed: int
+    actual_cost: float | None
+    status: str
+
+
+class SentimentSummary(BaseModel):
+    status: Literal["not_started", "partial", "complete"]
+    total_reviews: int = Field(description="Review records matching the filters")
+    classified: int = Field(description="Of those, reviews with a stored sentiment label")
+    coverage: float
+    dataset_classified: int
+    dataset_reviews: int
+    synthetic: bool = Field(description="True when any label is a synthetic demo label")
+    sources: list[NamedCount]
+    models: list[str]
+    prompt_versions: list[str]
+    distribution: list[LabelShare]
+    last_run: SentimentRun | None
+
+
+class SentimentGroup(BaseModel):
+    key: str
+    name: str
+    brand_name: str | None
+    classified: int
+    positive: int
+    neutral: int
+    negative: int
+    positive_share: float
+    neutral_share: float
+    negative_share: float
+    net: float = Field(description="positive_share - negative_share")
+
+
+class SentimentBreakdown(BaseModel):
+    by: Literal["brand", "subcategory", "product"]
+    min_classified: int
+    groups_total: int
+    items: list[SentimentGroup]
+
+
+class SentimentTrendPoint(BaseModel):
+    period: str
+    period_start: date
+    classified: int
+    positive: int
+    neutral: int
+    negative: int
+
+
+class SentimentTrend(BaseModel):
+    granularity: Literal["month", "quarter", "year"]
+    points: list[SentimentTrendPoint]
+
+
+class Evidence(BaseModel):
+    label: str
+    value: str
+
+
+class SentimentInsight(BaseModel):
+    id: str
+    title: str
+    statement: str
+    evidence: list[Evidence]
+
+
+class StoredInsights(BaseModel):
+    created_at: str
+    model: str
+    items: list[SentimentInsight]
+
+
+class SentimentInsights(BaseModel):
+    min_classified: int
+    computed: list[SentimentInsight]
+    ai: StoredInsights | None

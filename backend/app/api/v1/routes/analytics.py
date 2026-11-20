@@ -4,7 +4,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Path, Query, status
 
-from app.api.deps import DatasetDep
+from app.api.deps import DatasetDep, SentimentStoreDep
 from app.schemas.queries import (
     BrandDetailQuery,
     BrandListQuery,
@@ -16,6 +16,7 @@ from app.schemas.queries import (
     RatingPopularityQuery,
     ReviewFilters,
     ReviewListQuery,
+    SentimentBreakdownQuery,
     TopBrandsQuery,
     TopProductsByYearQuery,
     TopProductsQuery,
@@ -40,11 +41,24 @@ from app.schemas.responses import (
     ReviewerProfiles,
     ReviewItem,
     ReviewTrend,
+    SentimentBreakdown,
+    SentimentInsights,
+    SentimentSummary,
+    SentimentTrend,
     TopBrands,
     YearCount,
     YearRanking,
 )
-from app.services import brands, categories, kpis, prices, products, profile, reviews
+from app.services import (
+    brands,
+    categories,
+    kpis,
+    prices,
+    products,
+    profile,
+    reviews,
+    sentiment,
+)
 
 ReviewIdPath = Annotated[str, Path(pattern=r"^r_[0-9a-f]{16}$")]
 ProductIdPath = Annotated[str, Path(pattern=r"^P\d{1,12}$")]
@@ -56,6 +70,7 @@ brand_router = APIRouter(prefix="/brands", tags=["brands"])
 category_router = APIRouter(prefix="/categories", tags=["categories"])
 price_router = APIRouter(prefix="/prices", tags=["prices"])
 dataset_router = APIRouter(prefix="/dataset", tags=["dataset"])
+sentiment_router = APIRouter(prefix="/sentiment", tags=["sentiment"])
 
 
 # ----------------------------------------------------------------------------- KPIs
@@ -218,6 +233,38 @@ def dataset_profile(ds: DatasetDep):
     return profile.dataset_profile(ds)
 
 
+# ----------------------------------------------------------------------------- sentiment
+# Read-only: these endpoints never call an AI service. Classification runs from the CLI.
+@sentiment_router.get("/summary", response_model=SentimentSummary)
+def sentiment_summary(
+    ds: DatasetDep, store: SentimentStoreDep, f: Annotated[ReviewFilters, Query()]
+):
+    """Coverage, label sources and the positive/neutral/negative distribution."""
+    return sentiment.summary(ds, store, f)
+
+
+@sentiment_router.get("/breakdown", response_model=SentimentBreakdown)
+def sentiment_breakdown(
+    ds: DatasetDep, store: SentimentStoreDep, q: Annotated[SentimentBreakdownQuery, Query()]
+):
+    """Sentiment by brand, Skincare subcategory or product (minimum classified reviews)."""
+    return sentiment.breakdown(ds, store, q)
+
+
+@sentiment_router.get("/trends", response_model=SentimentTrend)
+def sentiment_trends(ds: DatasetDep, store: SentimentStoreDep, q: Annotated[TrendQuery, Query()]):
+    """Classified reviews per label and period."""
+    return sentiment.trend(ds, store, q)
+
+
+@sentiment_router.get("/insights", response_model=SentimentInsights)
+def sentiment_insights(
+    ds: DatasetDep, store: SentimentStoreDep, f: Annotated[ReviewFilters, Query()]
+):
+    """Computed, evidence-backed insights, plus stored AI-written insights (unfiltered only)."""
+    return sentiment.insights(ds, store, f)
+
+
 routers = [
     kpi_router,
     review_router,
@@ -226,4 +273,5 @@ routers = [
     category_router,
     price_router,
     dataset_router,
+    sentiment_router,
 ]
