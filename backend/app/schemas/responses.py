@@ -262,6 +262,25 @@ class TopBrands(BaseModel):
     items: list[RankedBrand]
 
 
+class BrandReviewStat(BaseModel):
+    rank: int
+    brand_name: str
+    review_count: int
+    share: float = Field(description="Share of the review records in the selection")
+    average_rating: float
+    five_star_share: float
+    recommendation_rate: float | None
+    reviewed_products: int
+
+
+class BrandReviewStats(BaseModel):
+    total_reviews: int
+    brands_with_reviews: int
+    min_reviews: int
+    brands_meeting_threshold: int
+    items: list[BrandReviewStat]
+
+
 # --------------------------------------------------------------------------- categories
 class CatalogueCategory(BaseModel):
     category: str
@@ -278,6 +297,7 @@ class CatalogueCategory(BaseModel):
 class CatalogueCategories(BaseModel):
     level: Literal["primary", "secondary"]
     parent: str | None
+    brand: str | None = None
     total_products: int
     items: list[CatalogueCategory]
 
