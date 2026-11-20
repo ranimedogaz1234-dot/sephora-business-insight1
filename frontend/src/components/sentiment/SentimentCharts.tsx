@@ -2,7 +2,7 @@
 
 import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import type { SentimentSummary, SentimentTrend } from "@/lib/api/types";
-import { axisFormatter, formatInteger, formatPercent } from "@/lib/format";
+import { axisFormatter, formatCompact, formatInteger, formatPercent } from "@/lib/format";
 import { chartChrome, colors, sentimentColors } from "@/lib/theme";
 import { toSentimentSearchParams, type SentimentState } from "@/lib/sentimentState";
 import { useNavigationTransition } from "@/components/layout/NavigationTransition";
@@ -72,7 +72,10 @@ export function SentimentDonutCard({ data }: { data: SentimentSummary }) {
               </PieChart>
             </ResponsiveContainer>
             <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-2xl font-semibold tabular-nums text-charcoal">{formatInteger(data.classified)}</span>
+              {/* Compact above 10,000 so the figure always fits inside the ring; exact value in the legend. */}
+              <span className="text-2xl font-semibold tabular-nums text-charcoal" title={formatInteger(data.classified)}>
+                {data.classified >= 10_000 ? formatCompact(data.classified) : formatInteger(data.classified)}
+              </span>
               <span className="text-[11px] text-ink-3">classified</span>
             </div>
           </div>

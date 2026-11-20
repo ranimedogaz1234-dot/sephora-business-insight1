@@ -127,6 +127,9 @@ describe("charts", () => {
       "Negative20.0%20",
     ]);
     unmount();
+    const big = render(<SentimentDonutCard data={summary({ classified: 1_100_000 })} />);
+    expect(screen.getByTitle("1,100,000")).toHaveTextContent("1.1M"); // fits inside the ring
+    big.unmount();
     render(<SentimentDonutCard data={summary({ classified: 0 })} />);
     expect(screen.getByText("No classified reviews match this selection.")).toBeInTheDocument();
   });
