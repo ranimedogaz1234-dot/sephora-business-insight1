@@ -2,8 +2,9 @@
 
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BACKEND_DIR = Path(__file__).resolve().parents[2]
@@ -33,9 +34,22 @@ class Settings(BaseSettings):
     cors_origins: list[str] = ["http://localhost:3001", "http://127.0.0.1:3001"]
     api_prefix: str = "/api/v1"
 
+    # --- AI sentiment (classification runs only from the CLI; the API only reads results)
+    # Persistent label store; defaults to <cache_dir>/sentiment.sqlite3 (gitignored).
+    sentiment_db: Path | None = None
+    sentiment_model: str = "claude-opus-5-5"
+    sentiment_effort: Literal["low", "medium", "high"] = "low"
+    sentiment_group_size: int = Field(20, ge=1, le=100)
+    # Read from ANTHROPIC_API_KEY (environment or backend/.env). Never logged or returned.
+    anthropic_api_key: SecretStr | None = Field(None, validation_alias="ANTHROPIC_API_KEY")
+
     @property
     def is_production(self) -> bool:
         return self.environment.lower() == "production"
+
+    @property
+    def sentiment_db_path(self) -> Path:
+        return self.sentiment_db or (self.cache_dir / "sentiment.sqlite3")
 
     @property
     def effective_cache_dir(self) -> Path | None:

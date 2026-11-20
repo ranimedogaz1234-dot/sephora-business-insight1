@@ -217,3 +217,11 @@ class ProductCompareQuery(QueryModel):
             raise ValueError("compare at least two different products")
         object.__setattr__(self, "product_id", unique)
         return self
+
+
+class SentimentBreakdownQuery(ReviewFilters):
+    by: Literal["brand", "subcategory", "product"] = "brand"
+    min_classified: int = Field(20, ge=1, le=1_000_000)
+    sort_by: Literal["classified", "negative_share", "positive_share", "net"] = "classified"
+    order: Order = "desc"
+    limit: int = Field(15, ge=1, le=100)
