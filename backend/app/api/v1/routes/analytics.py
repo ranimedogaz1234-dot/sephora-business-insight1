@@ -11,6 +11,7 @@ from app.schemas.queries import (
     BrandReviewStatsQuery,
     CatalogueCategoryQuery,
     PriceDistributionQuery,
+    ProductCompareQuery,
     ProductListQuery,
     RatingPopularityQuery,
     ReviewFilters,
@@ -28,6 +29,7 @@ from app.schemas.responses import (
     ExecutiveKpis,
     Page,
     PriceDistribution,
+    ProductComparison,
     ProductDetail,
     ProductItem,
     RankedProduct,
@@ -124,6 +126,17 @@ def review_years(ds: DatasetDep):
 def rating_popularity(ds: DatasetDep, q: Annotated[RatingPopularityQuery, Query()]):
     """Per-product average rating vs review volume and loves (scatter plot data)."""
     return products.rating_popularity(ds, q)
+
+
+@product_router.get("/compare", response_model=ProductComparison)
+def compare_products(ds: DatasetDep, q: Annotated[ProductCompareQuery, Query()]):
+    """Compare 2-4 products: catalogue facts, review statistics and review activity per period."""
+    try:
+        return products.compare_products(ds, q)
+    except products.UnknownProductsError as exc:
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND, f"Product not found: {', '.join(exc.missing)}"
+        ) from exc
 
 
 @product_router.get("", response_model=Page[ProductItem])

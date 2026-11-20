@@ -9,14 +9,18 @@ import pandas as pd
 
 from app.data.dataset import Dataset
 from app.schemas.queries import (
+    ProductCompareQuery,
     ProductListQuery,
     RatingPopularityQuery,
     TopProductsByYearQuery,
     TopProductsQuery,
 )
 from app.schemas.responses import (
+    ComparedProduct,
+    ComparisonPeriod,
     Page,
     PopularityPoint,
+    ProductComparison,
     ProductDetail,
     ProductItem,
     ProductReviewStats,
@@ -38,7 +42,7 @@ from app.services.common import (
     sort_frame,
     to_date,
 )
-from app.services.reviews import rating_buckets
+from app.services.reviews import period_keys, period_label, rating_buckets
 
 CATALOGUE_FLAGS = ("new", "limited_edition", "sephora_exclusive", "online_only", "out_of_stock")
 
@@ -231,3 +235,60 @@ def get_product(ds: Dataset, product_id: str) -> ProductDetail | None:
         ingredients=_parse_list(row["ingredients"]),
         review_stats=stats,
     )
+
+
+class UnknownProductsError(LookupError):
+    def __init__(self, missing: list[str]):
+        super().__init__(", ".join(missing))
+        self.missing = missing
+
+
+def compare_products(ds: Dataset, q: ProductCompareQuery) -> ProductComparison:
+    """Side-by-side figures for 2-4 products plus review activity on one shared period axis
+    (first to last period across all of them, zero-filled)."""
+    details = [get_product(ds, pid) for pid in q.product_id]
+    missing = [pid for pid, d in zip(q.product_id, details, strict=True) if d is None]
+    if missing:
+        raise UnknownProductsError(missing)
+
+    def compute() -> ProductComparison:
+        items = [
+            ComparedProduct(
+                **d.model_dump(include=set(ProductItem.model_fields)),
+                size=d.size,
+                review_stats=d.review_stats,
+            )
+            for d in details
+        ]
+        r = ds.reviews[ds.reviews["product_id"].isin(q.product_id).to_numpy()]
+        if r.empty:
+            return ProductComparison(granularity=q.granularity, items=items, periods=[])
+        keys = period_keys(
+            r["year"].to_numpy(dtype=np.int64), r["month"].to_numpy(dtype=np.int64), q.granularity
+        )
+        base, size = int(keys.min()), int(keys.max() - keys.min()) + 1
+        offs = keys - base
+        pids = r["product_id"].astype(str).to_numpy()
+        ratings = r["rating"].to_numpy(dtype=np.float64)
+        counts, sums = [], []
+        for pid in q.product_id:
+            mask = pids == pid
+            counts.append(np.bincount(offs[mask], minlength=size))
+            sums.append(np.bincount(offs[mask], weights=ratings[mask], minlength=size))
+        periods = []
+        for i in range(size):
+            label, start = period_label(base + i, q.granularity)
+            periods.append(
+                ComparisonPeriod(
+                    period=label,
+                    period_start=start,
+                    review_counts=[int(c[i]) for c in counts],
+                    average_ratings=[
+                        r4(s_[i] / c[i]) if c[i] else None
+                        for c, s_ in zip(counts, sums, strict=True)
+                    ],
+                )
+            )
+        return ProductComparison(granularity=q.granularity, items=items, periods=periods)
+
+    return ds.memo(("compare", q.cache_key()), compute)
