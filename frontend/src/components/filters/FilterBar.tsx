@@ -1,7 +1,6 @@
 "use client";
 
-import { useId } from "react";
-import { ChevronDown, RotateCcw, X } from "lucide-react";
+import { RotateCcw, X } from "lucide-react";
 import type { NamedCount } from "@/lib/api/types";
 import { formatInteger } from "@/lib/format";
 import {
@@ -13,50 +12,13 @@ import {
   type FilterDomain,
 } from "@/lib/filters";
 import { useNavigationTransition } from "@/components/layout/NavigationTransition";
+import { Select } from "@/components/ui/Select";
 
 interface FilterBarProps {
   filters: DashboardFilters;
   domain: FilterDomain;
   brands: NamedCount[];
   subcategories: NamedCount[];
-}
-
-function Select({
-  label,
-  value,
-  onChange,
-  children,
-  width = "sm:w-44",
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  children: React.ReactNode;
-  width?: string;
-}) {
-  const id = useId();
-  return (
-    <div className="flex min-w-0 flex-col gap-1">
-      <label htmlFor={id} className="text-[11px] font-medium text-ink-3">
-        {label}
-      </label>
-      <div className={`relative w-full ${width}`}>
-        <select
-          id={id}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="h-9 w-full appearance-none rounded-md border border-line bg-white pl-3 pr-8 text-sm text-charcoal transition-colors hover:border-line-strong focus:border-burgundy focus:outline-none"
-        >
-          {children}
-        </select>
-        <ChevronDown
-          aria-hidden
-          className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-3"
-          strokeWidth={1.75}
-        />
-      </div>
-    </div>
-  );
 }
 
 export function FilterBar({ filters, domain, brands, subcategories }: FilterBarProps) {

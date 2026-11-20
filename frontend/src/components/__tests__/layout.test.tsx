@@ -2,7 +2,7 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AppShell } from "@/components/layout/AppShell";
 import { Sidebar } from "@/components/layout/Sidebar";
-import { NAV_ITEMS } from "@/lib/navigation";
+import { NAV_ITEMS, isActive } from "@/lib/navigation";
 
 vi.mock("next/navigation", () => ({ usePathname: () => "/" }));
 
@@ -13,10 +13,16 @@ describe("Sidebar", () => {
     render(<Sidebar status={online} />);
     const nav = screen.getByRole("navigation", { name: "Main" });
     const links = within(nav).getAllByRole("link");
-    expect(links).toHaveLength(1);
-    expect(links[0]).toHaveAttribute("href", "/");
+    expect(links.map((l) => l.getAttribute("href"))).toEqual(["/", "/products"]);
     expect(links[0]).toHaveAttribute("aria-current", "page");
     expect(links[0]).toHaveTextContent("Executive Overview");
+    expect(links[1]).toHaveTextContent("Product Analytics");
+    expect(links[1]).not.toHaveAttribute("aria-current");
+  });
+
+  it("marks Product Analytics active on product detail pages", () => {
+    expect(isActive(NAV_ITEMS[1], "/products/P123")).toBe(true);
+    expect(isActive(NAV_ITEMS[0], "/products/P123")).toBe(false);
   });
 
   it("shows every planned section as a non-link 'coming soon' item", () => {
@@ -28,8 +34,8 @@ describe("Sidebar", () => {
       plannedLabels.map((l) => `${l} (coming soon, not yet available)Soon`),
     );
     expect(within(planned).queryAllByRole("link")).toHaveLength(0);
+    expect(plannedLabels).not.toContain("Product Analytics");
     for (const label of [
-      "Product Analytics",
       "Review Analytics",
       "Brands & Categories",
       "Product Comparison",

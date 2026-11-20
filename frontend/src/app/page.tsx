@@ -1,7 +1,7 @@
 import { connection } from "next/server";
 import { api } from "@/lib/api/client";
 import type { FilterOptions } from "@/lib/api/types";
-import { config } from "@/lib/config";
+import { settle } from "@/lib/settle";
 import {
   hasReviewFilters,
   parseFilters,
@@ -18,6 +18,7 @@ import { YearSelect } from "@/components/filters/YearSelect";
 import { KpiSection } from "@/components/dashboard/KpiSection";
 import { ChartCard } from "@/components/ui/ChartCard";
 import { EmptyState, SectionError } from "@/components/ui/States";
+import { ApiUnavailable } from "@/components/ui/ApiUnavailable";
 import { RankedBarList } from "@/components/charts/RankedBarList";
 import { ReviewActivityCard } from "@/components/charts/ReviewActivityCard";
 import { RatingDistributionCard } from "@/components/charts/RatingDistributionCard";
@@ -26,13 +27,6 @@ import { PriceDistributionCard } from "@/components/charts/PriceDistributionCard
 import { RatingPopularityCard } from "@/components/charts/RatingPopularityCard";
 
 const MIN_REVIEWS_SCATTER = 25;
-
-type Settled<T> = { ok: true; value: T } | { ok: false; error: string };
-const settle = <T,>(p: Promise<T>): Promise<Settled<T>> =>
-  p.then(
-    (value) => ({ ok: true as const, value }),
-    (e: unknown) => ({ ok: false as const, error: e instanceof Error ? e.message : String(e) }),
-  );
 
 function domainFrom(options: FilterOptions): FilterDomain {
   return {
@@ -43,28 +37,6 @@ function domainFrom(options: FilterOptions): FilterDomain {
   };
 }
 
-function Unavailable({ message }: { message: string }) {
-  return (
-    <>
-      <PageHeader
-        eyebrow="Executive overview"
-        title="Sephora Business Insight"
-        description="Headline performance of the Sephora catalogue and its Skincare reviews."
-      />
-      <main className="mx-auto max-w-[1440px] px-4 py-8 sm:px-6 lg:px-10">
-        <div role="alert" className="max-w-xl rounded-xl border border-line p-6">
-          <p className="text-sm font-semibold text-charcoal">The analytics API is not available</p>
-          <p className="mt-1 text-sm text-ink-2">{message}</p>
-          <p className="mt-3 text-xs text-ink-3">
-            Start the backend (see README) and make sure SBI_DATA_DIR points to the CSV files. No figures are shown
-            until real data is available.
-          </p>
-        </div>
-      </main>
-    </>
-  );
-}
-
 export default async function ExecutiveOverview({ searchParams }: { searchParams: Promise<RawSearchParams> }) {
   await connection(); // always render live data
 
@@ -72,7 +44,14 @@ export default async function ExecutiveOverview({ searchParams }: { searchParams
   try {
     options = await api.filters();
   } catch (e) {
-    return <Unavailable message={`Cannot reach the API at ${config.apiBaseUrl} (${(e as Error).message}).`} />;
+    return (
+      <ApiUnavailable
+        eyebrow="Executive overview"
+        title="Sephora Business Insight"
+        description="Headline performance of the Sephora catalogue and its Skincare reviews."
+        error={e}
+      />
+    );
   }
 
   const domain = domainFrom(options);

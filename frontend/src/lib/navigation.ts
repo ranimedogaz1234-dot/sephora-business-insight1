@@ -32,10 +32,10 @@ export const NAV_ITEMS: NavItem[] = [
   },
   {
     label: "Product Analytics",
-    href: null,
-    description: "Product performance, ratings and popularity.",
+    href: "/products",
+    description: "Search, filter and rank the catalogue; product details with review insights.",
     icon: Package,
-    status: "planned",
+    status: "available",
   },
   {
     label: "Review Analytics",
