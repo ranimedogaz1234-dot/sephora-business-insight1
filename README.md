@@ -124,6 +124,16 @@ figures, category mix, most reviewed products, and a subcategory comparison agai
 (differences are only highlighted with at least 30 brand reviews). The **brand directory**
 lists every catalogue brand with search, sortable columns and pagination.
 
+**Product Comparison** (`/compare`) compares two to four products from any category. Products
+are found with a server-side search (most reviewed first) or added from a product page's
+"Compare" link; the selection lives in the URL (`?ids=P1,P2`). Side-by-side cards show price,
+review records, average rating, five-star share, recommend rate, loves, Sephora's catalogue
+rating and review count, marking a single clear leader per measure. Charts compare the rating
+distribution, review activity on one shared yearly or quarterly timeline, and popularity (one
+measure at a time). Each product keeps a fixed, validated identity colour, and every chart has a
+legend and a table view. Products outside Skincare are shown without review figures and say so.
+A sentiment section is reserved and states that no sentiment results exist yet.
+
 Design system: white-dominant surfaces, burgundy `#800F35` for emphasis and data marks,
 soft pink for selection highlights, Playfair Display for editorial headings and Geist for
 all figures, labels and tables. Text colours meet WCAG AA; the heatmap ramp is a single
@@ -169,6 +179,7 @@ All endpoints are `GET` under `/api/v1`. Interactive docs at `/docs` (disabled w
 | `/products/top-by-year?year=` | reviews | Most reviewed products in a year |
 | `/products/review-years` | reviews | Years with reviews (year selector) |
 | `/products/rating-popularity` | reviews + catalogue | Rating vs review volume vs loves (scatter) |
+| `/products/compare?product_id=&product_id=` | catalogue + reviews | 2–4 products side by side, with review activity per year or quarter |
 | `/products` | catalogue | Catalogue search, filters, sort, pagination |
 | `/products/{product_id}` | catalogue + reviews | Product detail with review statistics |
 | `/brands` | catalogue + reviews | All brands, sortable and searchable |

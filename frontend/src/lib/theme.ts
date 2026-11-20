@@ -26,3 +26,11 @@ export const chartChrome = {
   axisLine: false,
   tickLine: false,
 } as const;
+
+/**
+ * Fixed identity colours for compared products (slot 1..4, never cycled or re-ranked).
+ * Validated with the dataviz palette checks (lightness band, chroma, adjacent CVD and
+ * normal-vision separation all pass on the light surface). Amber and teal sit just under
+ * 3:1 contrast, so every comparison chart also has a legend, labels and a table view.
+ */
+export const compareColors = ["#A8355E", "#2A78D6", "#C98500", "#1BAF7A"] as const;
