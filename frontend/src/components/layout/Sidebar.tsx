@@ -141,18 +141,22 @@ export function Sidebar({ collapsed = false, onToggleCollapsed, onNavigate, stat
           ))}
         </ul>
 
-        {collapsed ? (
-          <hr className="mx-3 my-4 border-line" />
-        ) : (
-          <p className="px-3 pb-2 pt-7 text-[11px] font-medium uppercase tracking-[0.16em] text-ink-3">
-            Coming next
-          </p>
+        {PLANNED_ITEMS.length > 0 && (
+          <>
+            {collapsed ? (
+              <hr className="mx-3 my-4 border-line" />
+            ) : (
+              <p className="px-3 pb-2 pt-7 text-[11px] font-medium uppercase tracking-[0.16em] text-ink-3">
+                Coming next
+              </p>
+            )}
+            <ul className="space-y-1" aria-label="Planned sections (not yet available)">
+              {PLANNED_ITEMS.map((item) => (
+                <PlannedItem key={item.label} item={item} collapsed={collapsed} />
+              ))}
+            </ul>
+          </>
         )}
-        <ul className="space-y-1" aria-label="Planned sections (not yet available)">
-          {PLANNED_ITEMS.map((item) => (
-            <PlannedItem key={item.label} item={item} collapsed={collapsed} />
-          ))}
-        </ul>
       </nav>
 
       <div className="border-t border-line px-3 py-3">

@@ -67,10 +67,10 @@ export const NAV_ITEMS: NavItem[] = [
   },
   {
     label: "AI Sentiment Analysis",
-    href: null,
+    href: "/sentiment",
     description: "Sentiment in review text.",
     icon: Sparkles,
-    status: "planned",
+    status: "available",
   },
 ];
 

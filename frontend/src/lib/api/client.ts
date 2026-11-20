@@ -9,6 +9,7 @@ import type {
   DatasetProfile,
   ExecutiveKpis,
   FilterOptions,
+  Granularity,
   HealthResponse,
   OverviewResponse,
   Page,
@@ -26,6 +27,12 @@ import type {
   ReviewCategories,
   ReviewFilterParams,
   ReviewTrend,
+  SentimentBreakdown,
+  SentimentDimension,
+  SentimentInsights,
+  SentimentSort,
+  SentimentSummary,
+  SentimentTrend,
   SortOrder,
   TopBrands,
   YearRanking,
@@ -116,6 +123,22 @@ export const api = {
   products: (q: ProductListParams = {}) => apiGet<Page<ProductItem>>("/products", { ...q }),
   product: (productId: string) =>
     apiGet<ProductDetail>(`/products/${encodeURIComponent(productId)}`),
+  sentimentSummary: (f: F = {}) => apiGet<SentimentSummary>("/sentiment/summary", { ...f }),
+  sentimentBreakdown: (
+    f: F = {},
+    opts: { by?: SentimentDimension; minClassified?: number; sortBy?: SentimentSort; order?: SortOrder; limit?: number } = {},
+  ) =>
+    apiGet<SentimentBreakdown>("/sentiment/breakdown", {
+      ...f,
+      by: opts.by,
+      min_classified: opts.minClassified,
+      sort_by: opts.sortBy,
+      order: opts.order,
+      limit: opts.limit,
+    }),
+  sentimentTrend: (f: F = {}, granularity: Granularity = "year") =>
+    apiGet<SentimentTrend>("/sentiment/trends", { ...f, granularity }),
+  sentimentInsights: (f: F = {}) => apiGet<SentimentInsights>("/sentiment/insights", { ...f }),
   datasetProfile: () => apiGet<DatasetProfile>("/dataset/profile"),
   compareProducts: (productIds: string[], granularity: "quarter" | "year" = "year") =>
     apiGet<ProductComparison>("/products/compare", { product_id: productIds, granularity }),

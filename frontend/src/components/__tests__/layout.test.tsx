@@ -13,7 +13,7 @@ describe("Sidebar", () => {
     render(<Sidebar status={online} />);
     const nav = screen.getByRole("navigation", { name: "Main" });
     const links = within(nav).getAllByRole("link");
-    expect(links.map((l) => l.getAttribute("href"))).toEqual(["/", "/products", "/reviews", "/brands", "/compare", "/explorer"]);
+    expect(links.map((l) => l.getAttribute("href"))).toEqual(["/", "/products", "/reviews", "/brands", "/compare", "/explorer", "/sentiment"]);
     expect(links[0]).toHaveAttribute("aria-current", "page");
     expect(links[0]).toHaveTextContent("Executive Overview");
     expect(links[1]).toHaveTextContent("Product Analytics");
@@ -25,25 +25,11 @@ describe("Sidebar", () => {
     expect(isActive(NAV_ITEMS[0], "/products/P123")).toBe(false);
   });
 
-  it("shows every planned section as a non-link 'coming soon' item", () => {
+  it("links every section once all of them are available, with no empty 'coming next' list", () => {
     render(<Sidebar status={online} />);
-    const planned = screen.getByRole("list", { name: /planned sections/i });
-    const items = within(planned).getAllByRole("listitem");
-    const plannedLabels = NAV_ITEMS.filter((i) => i.status === "planned").map((i) => i.label);
-    expect(items.map((li) => li.textContent)).toEqual(
-      plannedLabels.map((l) => `${l} (coming soon, not yet available)Soon`),
-    );
-    expect(within(planned).queryAllByRole("link")).toHaveLength(0);
-    expect(plannedLabels).not.toContain("Product Analytics");
-    expect(plannedLabels).not.toContain("Review Analytics");
-    expect(plannedLabels).not.toContain("Brands & Categories");
-    expect(plannedLabels).not.toContain("Product Comparison");
-    expect(plannedLabels).not.toContain("Data Explorer");
-    for (const label of [
-      "AI Sentiment Analysis",
-    ]) {
-      expect(plannedLabels).toContain(label);
-    }
+    expect(NAV_ITEMS.every((i) => i.status === "available" && i.href)).toBe(true);
+    expect(screen.queryByRole("list", { name: /planned sections/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/coming next/i)).not.toBeInTheDocument();
   });
 
   it("keeps labels available to screen readers when collapsed", () => {
