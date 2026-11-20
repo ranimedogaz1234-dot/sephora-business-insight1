@@ -22,7 +22,8 @@ from tests.oracle import Oracle
 
 
 def main() -> int:
-    settings = get_settings()
+    # Local measurement tool: hundreds of in-process requests, so no rate limiting.
+    settings = get_settings().model_copy(update={"rate_limit_per_minute": 0})
     t = time.perf_counter()
     oracle = Oracle.load(settings.data_dir)
     print(

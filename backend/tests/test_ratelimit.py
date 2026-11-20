@@ -122,3 +122,21 @@ def test_api_responses_carry_a_strict_csp(client):
     res = client.get("/api/v1/health")
     assert res.headers["Content-Security-Policy"] == "default-src 'none'; frame-ancestors 'none'"
     api(client, "/kpis")
+
+
+def test_measurement_clients_are_not_rate_limited(tmp_path, monkeypatch):
+    """Regression: the oracle checks send ~80 requests in a burst; on a fast CI runner the
+    default limiter ran dry (429). Test clients and the local measurement scripts disable it."""
+    import app.core.ratelimit as rl
+    from app.data.store import clear_cache
+    from tests.checks import run_all
+    from tests.oracle import Oracle
+
+    defaults = list(rl.RateLimiter.__init__.__defaults__)
+    defaults[-1] = lambda: 0.0  # frozen clock: no refill at all
+    monkeypatch.setattr(rl.RateLimiter.__init__, "__defaults__", tuple(defaults))
+    clear_cache()
+    c = make_client(FIXTURES, tmp_path / "c")
+    report = run_all(c, Oracle.load(FIXTURES))
+    assert report.failures == [] and report.passed > 0
+    assert all(c.get("/api/v1/health").status_code == 200 for _ in range(150))
